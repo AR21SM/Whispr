@@ -12,3 +12,12 @@ crate-type = ["cdylib"]
 candid = "0.10"
 ic-cdk = "0.17"
 ic-cdk-timers = "0.11" # Feel free to remove this dependency if you don't need timers
+
+[workspace]
+members = [
+  "src/whispr_backend"
+]
+
+[profile.release]
+lto = true
+opt-level = 'z'

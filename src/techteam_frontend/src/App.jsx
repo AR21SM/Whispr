@@ -1,31 +1,29 @@
-import { useState } from 'react';
-import { techteam_backend } from 'declarations/techteam_backend';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/layout/Navbar';
+// import Footer from './components/layout/Footer';
+import Home from './pages/Home'; // Changed from lowercase to PascalCase
+import ReportCrime from './pages/Submit';
+import PoliceDashboard from './pages/PoliceDashboard';
+import './index.css';
 
-function App() {
-  const [greeting, setGreeting] = useState('');
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    const name = event.target.elements.name.value;
-    techteam_backend.greet(name).then((greeting) => {
-      setGreeting(greeting);
-    });
-    return false;
-  }
-
+const App = () => {
   return (
-    <main>
-      <img src="/logo2.svg" alt="DFINITY logo" />
-      <br />
-      <br />
-      <form action="#" onSubmit={handleSubmit}>
-        <label htmlFor="name">Enter your name: &nbsp;</label>
-        <input id="name" alt="Name" type="text" />
-        <button type="submit">Click Me!</button>
-      </form>
-      <section id="greeting">{greeting}</section>
-    </main>
+    <Router>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} /> {/* Changed from lowercase to PascalCase */}
+            <Route path="/report" element={<ReportCrime />} />
+            <Route path="/dashboard" element={<PoliceDashboard />} />
+          </Routes>
+        </main>
+      
+        {/* <Footer /> */}
+      </div>
+    </Router>
   );
-}
+};
 
 export default App;

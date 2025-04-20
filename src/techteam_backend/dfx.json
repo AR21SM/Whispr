@@ -1,0 +1,24 @@
+{
+    "canisters": {
+      "whispr_backend": {
+        "candid": "src/whispr_backend/whispr_backend.did",
+        "package": "whispr_backend",
+        "type": "rust"
+      },
+      "whispr_assets": {
+        "dependencies": ["whispr_backend"],
+        "frontend": {
+          "entrypoint": "src/whispr_assets/src/index.html"
+        },
+        "source": ["src/whispr_assets/assets", "dist/whispr_assets/"],
+        "type": "assets"
+      }
+    },
+    "defaults": {
+      "build": {
+        "args": "",
+        "packtool": ""
+      }
+    },
+    "version": 1
+  }

@@ -1,0 +1,93 @@
+type ReportId = nat64;
+type MessageId = nat64;
+
+type User = record {
+    principal : principal;
+    username : text;
+    token_balance : nat64;
+    reports_submitted : vec ReportId;
+    reputation_score : int32;
+};
+
+type Authority = record {
+    principal : principal;
+    reports_reviewed : vec ReportId;
+    reports_approved : vec ReportId;
+};
+
+type ReportStatus = variant {
+    Pending;
+    UnderReview;
+    Approved;
+    Rejected;
+};
+
+type ReportVerdict = record {
+    is_genuine : bool;
+    feedback : text;
+    reward_multiplier : nat8;
+};
+
+type Report = record {
+    id : ReportId;
+    reporter_principal : principal;
+    reporter_pseudonym : text;
+    title : text;
+    category : text;
+    description : text;
+    location : text;
+    timestamp : nat64;
+    evidence_refs : vec text;
+    status : ReportStatus;
+    staked_amount : nat64;
+    verdict : opt ReportVerdict;
+    reward_claimed : bool;
+};
+
+type ReportSubmission = record {
+    title : text;
+    category : text;
+    description : text;
+    location : text;
+    stake_amount : nat64;
+    evidence_data : vec EvidenceData;
+};
+
+type EvidenceData = record {
+    content_type : text;
+    data : blob;
+    description : text;
+};
+
+type MessageSender = variant {
+    Reporter;
+    Authority : principal;
+};
+
+type Message = record {
+    id : MessageId;
+    report_id : ReportId;
+    sender : MessageSender;
+    content : text;
+    timestamp : nat64;
+};
+
+service : {
+    // User management
+    "get_user_profile" : () -> (opt User) query;
+    "register_user" : (username : text) -> (variant { Ok : User; Err : text });
+    "register_authority" : (auth_code : text) -> (variant { Ok; Err : text });
+    
+    // Report management
+    "submit_report" : (report_data : ReportSubmission) -> (variant { Ok : ReportId; Err : text });
+    "get_report" : (report_id : ReportId) -> (opt Report) query;
+    "list_my_reports" : () -> (vec Report) query;
+    
+    // Authority functions
+    "review_report" : (report_id : ReportId, verdict : ReportVerdict) -> (variant { Ok; Err : text });
+    "list_pending_reports" : () -> (vec Report) query;
+    
+    // Messaging
+    "send_message" : (report_id : ReportId, content : text) -> (variant { Ok : MessageId; Err : text });
+    "get_messages" : (report_id : ReportId) -> (vec Message) query;
+}

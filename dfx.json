@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "techteam_backend": {
+      "candid": "src/techteam_backend/techteam_backend.did",
+      "package": "techteam_backend",
+      "type": "rust"
+    },
+    "techteam_frontend": {
+      "dependencies": [
+        "techteam_backend"
+      ],
+      "source": [
+        "src/techteam_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "techteam_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "src/whispr_backend"
+]
+
+[profile.release]
+lto = true
+opt-level = 'z'

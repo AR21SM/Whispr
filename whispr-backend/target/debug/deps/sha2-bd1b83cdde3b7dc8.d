@@ -1,0 +1,13 @@
+C:\Users\acer\Desktop\New folder\whispr-backend\target\debug\deps\libsha2-bd1b83cdde3b7dc8.rmeta: C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\lib.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\core_api.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\consts.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256\soft.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256\x86.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512\soft.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512\x86.rs
+
+C:\Users\acer\Desktop\New folder\whispr-backend\target\debug\deps\sha2-bd1b83cdde3b7dc8.d: C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\lib.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\core_api.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\consts.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256\soft.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256\x86.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512\soft.rs C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512\x86.rs
+
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\lib.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\core_api.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\consts.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256\soft.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha256\x86.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512\soft.rs:
+C:\Users\acer\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sha2-0.10.8\src\sha512\x86.rs:

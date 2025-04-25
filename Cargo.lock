@@ -550,7 +550,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "Whispr_backend"
+name = "techteam_backend"
 version = "0.1.0"
 dependencies = [
  "candid",

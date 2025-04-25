@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "src/Whispr_backend"
+    "src/techteam_backend"
 ]
 resolver = "2"

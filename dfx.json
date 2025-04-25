@@ -1,19 +1,19 @@
 {
   "canisters": {
-    "Whispr_backend": {
-      "candid": "src/Whispr_backend/Whispr_backend.did",
-      "package": "Whispr_backend",
+    "techteam_backend": {
+      "candid": "src/techteam_backend/techteam_backend.did",
+      "package": "techteam_backend",
       "type": "rust"
     },
-    "Whispr_frontend": {
+    "techteam_frontend": {
       "dependencies": [
-        "Whispr_backend"
+        "techteam_backend"
       ],
       "source": [
-        "src/Whispr_frontend/dist"
+        "src/techteam_frontend/dist"
       ],
       "type": "assets",
-      "workspace": "Whispr_frontend"
+      "workspace": "techteam_frontend"
     }
   },
   "defaults": {

@@ -1,29 +1,30 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/layout/Navbar';
-// import Footer from './components/layout/Footer';
-import Home from './pages/Home'; // Changed from lowercase to PascalCase
-import ReportCrime from './pages/Submit';
-import PoliceDashboard from './pages/PoliceDashboard';
-import './index.scss';
+import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
+import Layout from './components/layout/Layout';
+import HomePage from './pages/HomePage';
+import ReportPage from './pages/ReportPage';
+import DashboardPage from './pages/DashboardPage';
+import AuthorityPage from './pages/AuthorityPage';
+import ChatPage from './pages/ChatPage';
+import NotFoundPage from './pages/NotFoundPage';
+import './App.css';
 
-const App = () => {
+function App() {
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} /> {/* Changed from lowercase to PascalCase */}
-            <Route path="/report" element={<ReportCrime />} />
-            <Route path="/dashboard" element={<PoliceDashboard />} />
-          </Routes>
-        </main>
-      
-        {/* <Footer /> */}
-      </div>
-    </Router>
+    <ThemeProvider>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<HomePage />} />
+          <Route path="report" element={<ReportPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="authority" element={<AuthorityPage />} />
+          <Route path="chat/:reportId" element={<ChatPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </ThemeProvider>
   );
-};
+}
 
 export default App;

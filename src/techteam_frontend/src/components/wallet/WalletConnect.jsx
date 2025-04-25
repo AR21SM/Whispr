@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const WalletConnect = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -32,7 +32,6 @@ const WalletConnect = () => {
         }
       } catch (error) {
         console.error("Error checking wallet connection:", error);
-        setError("Failed to check wallet connection");
       }
     };
     
@@ -45,7 +44,7 @@ const WalletConnect = () => {
   }, []);
 
   // Connect to Plug wallet
-  const connectWallet = async () => {
+  const connectWallet = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -91,10 +90,10 @@ const WalletConnect = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  // Disconnect wallet with fallback support
-  const disconnectWallet = async () => {
+  // Disconnect wallet with guaranteed disconnection
+  const disconnectWallet = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -103,29 +102,15 @@ const WalletConnect = () => {
       if (window.ic?.plug) {
         try {
           await window.ic.plug.disconnect();
-          console.log("Disconnect API call successful");
         } catch (apiError) {
           console.warn("Error with plug.disconnect API:", apiError);
           // Continue with fallback even if API fails
         }
       }
       
-      // Fallback: Clear agent and manually reset state
-      if (window.ic?.plug?.agent) {
-        try {
-          // Try to reset the agent
-          window.ic.plug.agent = null;
-          console.log("Agent reset successful");
-        } catch (agentError) {
-          console.warn("Error resetting agent:", agentError);
-        }
-      }
-      
       // Always reset React state regardless of API success
       setIsConnected(false);
       setWalletInfo(null);
-      setSuccessMessage("Wallet disconnected successfully!");
-      setTimeout(() => setSuccessMessage(null), 3000);
       
       // Force clear localStorage entries that might be related to wallet connection
       try {
@@ -136,17 +121,26 @@ const WalletConnect = () => {
         console.warn("Error clearing localStorage:", storageError);
       }
       
-      // Optionally, refresh the page to ensure a clean state
-      // This is a last resort if the above methods don't work
-      // window.location.reload();
+      // Clear any other state or caches
+      if (window.ic?.plug?.agent) {
+        try {
+          window.ic.plug.agent = null;
+        } catch (err) {}
+      }
       
+      setSuccessMessage("Wallet disconnected successfully!");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Disconnect error:", error);
       setError("Error disconnecting wallet: " + (error.message || "Unknown error"));
+      
+      // Even if there's an error, still reset the React state as a fallback
+      setIsConnected(false);
+      setWalletInfo(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return {
     isConnected,

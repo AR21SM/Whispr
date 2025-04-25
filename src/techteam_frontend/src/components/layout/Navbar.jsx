@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../../assets/logo.png';; // Import the logo directly
+import WalletConnectButton from '../wallet/WalletConnectButton';
 
 const Navbar = () => {
   return (
@@ -25,6 +26,7 @@ const Navbar = () => {
         </div>
       </div>
       <div className="flex-grow"></div>
+      <WalletConnectButton />
     </nav>
   );
 };

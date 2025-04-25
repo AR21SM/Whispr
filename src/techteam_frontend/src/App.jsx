@@ -5,7 +5,7 @@ import Navbar from './components/layout/Navbar';
 import Home from './pages/Home'; // Changed from lowercase to PascalCase
 import ReportCrime from './pages/Submit';
 import PoliceDashboard from './pages/PoliceDashboard';
-import './index.css';
+import './index.scss';
 
 const App = () => {
   return (

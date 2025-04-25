@@ -3,7 +3,7 @@
     "node": ">=16.0.0",
     "npm": ">=7.0.0"
   },
-  "name": "techteam",
+  "name": "Whispr",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "prebuild": "npm run prebuild --workspaces --if-present",
@@ -13,7 +13,7 @@
   },
   "type": "module",
   "workspaces": [
-    "src/techteam_frontend"
+    "src/Whispr_frontend"
   ],
   "dependencies": {
     "@dfinity/agent": "^2.4.1",
@@ -24,9 +24,11 @@
     "@react-spring/web": "^9.7.5",
     "axios": "^1.9.0",
     "classnames": "^2.5.1",
+    "framer-motion": "^12.9.2",
     "lucide": "^0.503.0",
     "lucide-react": "^0.503.0",
-    "react": "^18.3.1"
+    "react": "^18.3.1",
+    "three": "^0.176.0"
   },
   "devDependencies": {
     "dotenv": "^16.5.0",

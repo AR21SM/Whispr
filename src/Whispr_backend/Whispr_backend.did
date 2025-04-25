@@ -1,0 +1,71 @@
+type Coordinates = record {
+  lat: float64;
+  lng: float64;
+};
+
+type LocationData = record {
+  address: text;
+  coordinates: opt Coordinates;
+};
+
+type EvidenceFile = record {
+  name: text;
+  file_type: text;
+  size: nat64;
+  content: blob;
+};
+
+type ReportStatus = variant {
+  Pending;
+  Verified;
+  Rejected;
+};
+
+type Report = record {
+  id: text;
+  reporter: principal;
+  title: text;
+  description: text;
+  location: LocationData;
+  date: opt text;
+  time: opt text;
+  category: text;
+  evidence_files: vec EvidenceFile;
+  stake_amount: nat64;
+  status: ReportStatus;
+  created_at: nat64;
+  reward: nat64;
+  has_messages: bool;
+};
+
+type ReportSubmission = record {
+  title: text;
+  description: text;
+  location: LocationData;
+  date: opt text;
+  time: opt text;
+  category: text;
+  evidence_files: vec EvidenceFile;
+  stake_amount: nat64;
+};
+
+type ReportSummary = record {
+  id: text;
+  title: text;
+  category: text;
+  date: text;
+  status: text;
+  stake: nat64;
+  reward: nat64;
+  has_messages: bool;
+};
+
+service : {
+  "get_report": (text) -> (opt Report) query;
+  "get_my_reports": () -> (vec ReportSummary) query;
+  "submit_report": (ReportSubmission) -> (text);
+  "verify_report": (text, nat64) -> (bool);
+  "reject_report": (text) -> (bool);
+  "get_token_balance": () -> (nat64) query;
+  "greet": (text) -> (text) query;
+}

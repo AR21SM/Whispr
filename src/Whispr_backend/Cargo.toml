@@ -1,5 +1,5 @@
 [package]
-name = "techteam_backend"
+name = "Whispr_backend"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,7 +15,7 @@ ic-cdk-timers = "0.11" # Feel free to remove this dependency if you don't need t
 
 [workspace]
 members = [
-  "src/whispr_backend"
+  "src/Whispr_backend"
 ]
 
 [profile.release]

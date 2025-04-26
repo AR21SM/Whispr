@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Search, Check, MapPinned, AlertTriangle } from 'lucide-react';
+import { MapPin, Search, Check, MapPinned, Loader2 } from 'lucide-react';
 import Button from './Button';
 
 const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates = null }) => {
@@ -10,47 +10,47 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
     coordinates: initialCoordinates || { lat: 20.5937, lng: 78.9629 } // Default to India
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const leafletMap = useRef(null);
   const leafletMarker = useRef(null);
-  const [error, setError] = useState(null);
-
-  // Check if running in a secure context (HTTPS or localhost)
-  const isSecureContext = useRef(
-    window.isSecureContext || 
-    window.location.hostname === 'localhost' || 
-    window.location.hostname === '127.0.0.1'
-  );
+  const [mapError, setMapError] = useState(false);
+  
+  // Store initial location to avoid losing it during rendering
+  const initialLocationRef = useRef({
+    address: initialAddress,
+    coordinates: initialCoordinates || { lat: 20.5937, lng: 78.9629 }
+  });
 
   // Initialize Leaflet Map (free alternative to Google Maps)
   useEffect(() => {
-    // Load Leaflet CSS
-    if (!document.getElementById('leaflet-css')) {
-      const linkElement = document.createElement('link');
-      linkElement.id = 'leaflet-css';
-      linkElement.rel = 'stylesheet';
-      linkElement.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      linkElement.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
-      linkElement.crossOrigin = "";
-      document.head.appendChild(linkElement);
-    }
-
     let isMounted = true;
     
+    // Load Leaflet CSS
+    if (!document.getElementById('leaflet-css')) {
+      try {
+        const linkElement = document.createElement('link');
+        linkElement.id = 'leaflet-css';
+        linkElement.rel = 'stylesheet';
+        linkElement.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(linkElement);
+      } catch (error) {
+        console.warn('Failed to load Leaflet CSS:', error);
+      }
+    }
+
     // Load Leaflet JS
     const loadLeaflet = async () => {
-      try {
-        // If Leaflet is already loaded
-        if (window.L) {
-          if (isMounted) initMap();
-          return;
-        }
+      // If Leaflet is already loaded
+      if (window.L) {
+        if (isMounted) initMap();
+        return;
+      }
 
+      try {
         // Load Leaflet script
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
-        script.crossOrigin = "";
         script.async = true;
         
         // Create a promise to wait for script load
@@ -61,158 +61,205 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
         
         document.head.appendChild(script);
         await scriptLoadPromise;
-        
-        // Check if component is still mounted before initializing map
-        if (isMounted) {
-          // Small delay to ensure DOM is ready
-          setTimeout(() => {
-            initMap();
-          }, 100);
-        }
+        if (isMounted) initMap();
       } catch (error) {
-        console.error('Failed to load Leaflet:', error);
+        console.warn('Failed to load Leaflet:', error);
         if (isMounted) {
           setIsLoading(false);
-          setError('Failed to load map. Please refresh the page.');
+          setMapError(true);
         }
       }
     };
     
-    loadLeaflet();
+    // Short timeout to ensure DOM is ready
+    const timer = setTimeout(() => {
+      loadLeaflet().catch(err => {
+        console.warn('Failed to initialize map:', err);
+        if (isMounted) {
+          setIsLoading(false);
+          setMapError(true);
+        }
+      });
+    }, 100);
     
-    // Cleanup function
     return () => {
       isMounted = false;
+      clearTimeout(timer);
+      
       // Cleanup map when component unmounts
       if (leafletMap.current) {
-        leafletMap.current.remove();
+        try {
+          leafletMap.current.remove();
+        } catch (e) {
+          console.warn('Error cleaning up map:', e);
+        }
       }
     };
-  }, []);
-
-  // Add resize handler to fix map rendering issues
-  useEffect(() => {
-    const handleResize = () => {
-      if (leafletMap.current) {
-        leafletMap.current.invalidateSize();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const initMap = () => {
-    if (!mapRef.current || typeof window.L !== 'object') {
-      setIsLoading(false);
-      setError('Map could not be initialized');
-      return;
-    }
+    if (!mapRef.current || !window.L) return;
 
     try {
-      // Create map instance
-      const map = window.L.map(mapRef.current, {
-        attributionControl: false, // Hide attribution initially for cleaner look
-        zoomControl: true
-      }).setView(
-        [selectedLocation.coordinates.lat, selectedLocation.coordinates.lng], 
-        5 // Start with a zoomed out view
-      );
+      // Check if map is already initialized
+      if (leafletMap.current) {
+        try {
+          leafletMap.current.remove();
+        } catch (e) {
+          console.warn('Error removing existing map:', e);
+        }
+      }
       
-      // Add dark theme tile layer with https
-      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-        subdomains: 'abcd'
-      }).addTo(map);
-
-      // Add attribution in bottom-right
-      window.L.control.attribution({
-        position: 'bottomright'
-      }).addTo(map);
-      
-      // Create custom marker icon with inline SVG
-      const markerIcon = window.L.divIcon({
-        html: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" fill="#8b5cf6" stroke="white" stroke-width="2"/>
-                <circle cx="12" cy="12" r="3" fill="white"/>
-              </svg>`,
-        className: '',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-      
-      // Create marker
-      const marker = window.L.marker(
-        [selectedLocation.coordinates.lat, selectedLocation.coordinates.lng],
-        { icon: markerIcon, draggable: true }
-      ).addTo(map);
-      
-      // Store references
-      leafletMap.current = map;
-      leafletMarker.current = marker;
-      
-      // Add marker drag event
-      marker.on('dragend', () => {
-        const position = marker.getLatLng();
-        const newCoordinates = { 
-          lat: position.lat, 
-          lng: position.lng 
-        };
-        updateLocationFromCoordinates(newCoordinates);
-      });
-      
-      // Add map click event
-      map.on('click', (e) => {
-        const newCoordinates = { 
-          lat: e.latlng.lat, 
-          lng: e.latlng.lng 
-        };
-        marker.setLatLng([newCoordinates.lat, newCoordinates.lng]);
-        updateLocationFromCoordinates(newCoordinates);
-      });
-
-      // Force a resize after initialization to fix rendering issues
-      setTimeout(() => {
-        map.invalidateSize();
+      // Create map instance with error catcher
+      try {
+        // Use coordinates from state or initialRef
+        const coordinates = selectedLocation.coordinates || initialLocationRef.current.coordinates;
         
-        // Zoom to a better view after a short delay
+        const map = window.L.map(mapRef.current, {
+          // Add options to prevent common errors
+          attributionControl: false,
+          zoomControl: true,
+          doubleClickZoom: true,
+          scrollWheelZoom: true,
+        }).setView(
+          [coordinates.lat, coordinates.lng], 
+          12
+        );
+        
+        // Add dark theme tile layer with error handling
+        window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+          errorTileUrl: 'https://i.imgur.com/44w1cFj.png' // Simple gray placeholder for error tiles
+        }).addTo(map);
+
+        // Create simple marker icon to avoid rendering issues
+        const markerIcon = window.L.divIcon({
+          html: `<svg viewBox="0 0 24 24" width="24" height="24" stroke="white" fill="#7c3aed" stroke-width="2">
+                  <circle cx="12" cy="10" r="8" />
+                  <line x1="12" y1="10" x2="12" y2="21" />
+                </svg>`,
+          className: 'custom-leaflet-marker',
+          iconSize: [24, 36],
+          iconAnchor: [12, 36]
+        });
+        
+        // Create marker
+        const marker = window.L.marker(
+          [coordinates.lat, coordinates.lng],
+          { icon: markerIcon, draggable: true }
+        ).addTo(map);
+        
+        // Store references
+        leafletMap.current = map;
+        leafletMarker.current = marker;
+        
+        // Add marker drag event with error handling
+        marker.on('dragend', () => {
+          try {
+            const position = marker.getLatLng();
+            const newCoordinates = { 
+              lat: position.lat, 
+              lng: position.lng 
+            };
+            updateLocationFromCoordinates(newCoordinates);
+          } catch (e) {
+            console.warn('Error handling marker drag:', e);
+          }
+        });
+        
+        // Add map click event with error handling
+        map.on('click', (e) => {
+          try {
+            const newCoordinates = { 
+              lat: e.latlng.lat, 
+              lng: e.latlng.lng 
+            };
+            marker.setLatLng([newCoordinates.lat, newCoordinates.lng]);
+            updateLocationFromCoordinates(newCoordinates);
+          } catch (e) {
+            console.warn('Error handling map click:', e);
+          }
+        });
+        
+        // Add invalidateSize on window resize to prevent display issues
+        const handleResize = () => {
+          if (map) {
+            try {
+              map.invalidateSize();
+            } catch (e) {
+              console.warn('Error handling resize:', e);
+            }
+          }
+        };
+        
+        window.addEventListener('resize', handleResize);
+        
+        // Clean up the event listener on map removal
+        map.on('remove', () => {
+          window.removeEventListener('resize', handleResize);
+        });
+        
+        setIsLoading(false);
+        setMapError(false);
+        
+        // If we have coordinates, fetch nearby places
+        if (coordinates && coordinates.lat) {
+          fetchNearbyPlaces(coordinates);
+        }
+        
+        // Fix map rendering issues by triggering a resize after a short delay
         setTimeout(() => {
-          map.setZoom(4);
-          
-          // If we have initial coordinates, fetch nearby places
-          if (selectedLocation.coordinates && selectedLocation.coordinates.lat) {
-            fetchNearbyPlaces(selectedLocation.coordinates);
+          try {
+            map.invalidateSize();
+          } catch (e) {
+            console.warn('Error invalidating map size:', e);
           }
         }, 200);
-      }, 100);
-      
-      setIsLoading(false);
-      setError(null);
+      } catch (mapError) {
+        console.warn('Error creating map instance:', mapError);
+        setIsLoading(false);
+        setMapError(true);
+      }
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.warn('Error initializing map:', error);
       setIsLoading(false);
-      setError('Failed to initialize map');
+      setMapError(true);
     }
   };
 
   const updateLocationFromCoordinates = (coordinates) => {
-    // Set loading state
-    setIsLoading(true);
+    // First update coordinates immediately for better UX, regardless of geocoding success
+    const immediateLocation = {
+      address: selectedLocation.address || `Location at ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`,
+      coordinates
+    };
+    
+    setSelectedLocation(immediateLocation);
+    
+    // Also call onLocationSelect immediately to make sure parent components get the coordinates
+    // even if the geocoding request fails
+    if (onLocationSelect) {
+      onLocationSelect(immediateLocation);
+    }
+    
+    // Set a timeout to avoid too many requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     
     // Use Nominatim for reverse geocoding (free)
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coordinates.lat}&lon=${coordinates.lng}&format=json&accept-language=en`, {
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coordinates.lat}&lon=${coordinates.lng}&format=json`, {
+      signal: controller.signal,
       headers: {
-        'User-Agent': 'Whispr App (https://aoicy-vyaaa-aaaag-aua4a-cai.icp0.io)'
+        'User-Agent': 'WhisprApp/1.0' // Best practice when using Nominatim
       }
     })
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
       })
       .then(data => {
+        clearTimeout(timeoutId);
         if (data && data.display_name) {
           const address = data.display_name;
           const updatedLocation = {
@@ -223,6 +270,7 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
           setSelectedLocation(updatedLocation);
           setSearchValue(address);
           
+          // Update again with the proper address
           if (onLocationSelect) {
             onLocationSelect(updatedLocation);
           }
@@ -232,47 +280,46 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
         }
       })
       .catch(error => {
-        console.error("Error during reverse geocoding:", error);
-        // Still update with raw coordinates if geocoding fails
-        const updatedLocation = {
-          address: `Lat: ${coordinates.lat.toFixed(6)}, Lng: ${coordinates.lng.toFixed(6)}`,
-          coordinates
-        };
-        setSelectedLocation(updatedLocation);
-        if (onLocationSelect) {
-          onLocationSelect(updatedLocation);
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          console.warn("Geocoding request timed out");
+        } else {
+          console.warn("Error during reverse geocoding:", error);
         }
-      })
-      .finally(() => {
-        setIsLoading(false);
+        
+        // Location was already updated with coordinates, no need to do it again
       });
   };
 
   const handleSearchSubmit = (e) => {
-    // Ensure the form doesn't refresh the page
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // Prevent form submission - this prevents page reload
+    e.preventDefault();
     
-    if (!searchValue.trim()) return;
+    // Immediately stop if empty search
+    const trimmedSearch = searchValue.trim();
+    if (!trimmedSearch) return;
 
-    setIsLoading(true);
-    setError(null);
+    // Show loading state for search button specifically
+    setIsSearching(true);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
     
     // Use Nominatim for geocoding (free)
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchValue)}&format=json&limit=1&accept-language=en`, {
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmedSearch)}&format=json&limit=1`, {
+      signal: controller.signal,
       headers: {
-        'User-Agent': 'Whispr App (https://aoicy-vyaaa-aaaag-aua4a-cai.icp0.io)'
+        'User-Agent': 'WhisprApp/1.0' // Best practice when using Nominatim
       }
     })
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
       })
       .then(data => {
+        clearTimeout(timeoutId);
+        setIsSearching(false);
+        
         if (data && data.length > 0) {
           const place = data[0];
           const newCoordinates = { 
@@ -280,50 +327,66 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
             lng: parseFloat(place.lon) 
           };
           
+          // Update location immediately regardless of map status
+          const updatedLocation = {
+            address: place.display_name,
+            coordinates: newCoordinates
+          };
+          
+          setSelectedLocation(updatedLocation);
+          
+          if (onLocationSelect) {
+            onLocationSelect(updatedLocation);
+          }
+          
+          // Then try to update the map if available
           if (leafletMap.current && leafletMarker.current) {
-            leafletMap.current.setView([newCoordinates.lat, newCoordinates.lng], 16);
-            leafletMarker.current.setLatLng([newCoordinates.lat, newCoordinates.lng]);
-            
-            const updatedLocation = {
-              address: place.display_name,
-              coordinates: newCoordinates
-            };
-            
-            setSelectedLocation(updatedLocation);
-            
-            if (onLocationSelect) {
-              onLocationSelect(updatedLocation);
+            try {
+              leafletMap.current.setView([newCoordinates.lat, newCoordinates.lng], 16);
+              leafletMarker.current.setLatLng([newCoordinates.lat, newCoordinates.lng]);
+              fetchNearbyPlaces(newCoordinates);
+            } catch (e) {
+              console.warn("Error updating map view:", e);
             }
-            
-            fetchNearbyPlaces(newCoordinates);
           }
         } else {
-          setError('No locations found. Try a different search term.');
+          // Provide better feedback - no alert
+          setSearchValue(prevValue => prevValue + " (not found)");
+          setTimeout(() => {
+            setSearchValue(trimmedSearch);
+          }, 1500);
         }
       })
       .catch(error => {
-        console.error("Error during geocoding search:", error);
-        setError('Error searching for location. Please try again.');
-      })
-      .finally(() => {
-        setIsLoading(false);
+        clearTimeout(timeoutId);
+        setIsSearching(false);
+        
+        console.warn("Error during geocoding search:", error);
+        // Don't use alerts - provide inline feedback
+        setSearchValue(prevValue => prevValue + " (search failed)");
+        setTimeout(() => {
+          setSearchValue(trimmedSearch);
+        }, 1500);
       });
   };
 
   const fetchNearbyPlaces = (coordinates) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
     // Use Nominatim to find nearby POIs
-    fetch(`https://nominatim.openstreetmap.org/search?lat=${coordinates.lat}&lon=${coordinates.lng}&format=json&addressdetails=1&limit=5&accept-language=en`, {
+    fetch(`https://nominatim.openstreetmap.org/search?lat=${coordinates.lat}&lon=${coordinates.lng}&format=json&addressdetails=1&limit=5`, {
+      signal: controller.signal,
       headers: {
-        'User-Agent': 'Whispr App (https://aoicy-vyaaa-aaaag-aua4a-cai.icp0.io)'
+        'User-Agent': 'WhisprApp/1.0' // Best practice when using Nominatim
       }
     })
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
       })
       .then(data => {
+        clearTimeout(timeoutId);
         if (data && data.length > 0) {
           // Filter to unique places by name
           const uniquePlaces = [];
@@ -342,61 +405,87 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
         }
       })
       .catch(error => {
-        console.error("Error fetching nearby places:", error);
+        clearTimeout(timeoutId);
+        if (error.name !== 'AbortError') {
+          console.warn("Error fetching nearby places:", error);
+        }
         setNearbyPlaces([]);
       });
   };
 
   const handleUseCurrentLocation = () => {
-    // Check if geolocation is supported
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
-      return;
-    }
-    
-    // Check if we're in a secure context (HTTPS or localhost)
-    if (!isSecureContext.current) {
-      setError('Geolocation requires a secure connection (HTTPS). Please access this site via HTTPS.');
+      // Use non-modal feedback
+      setSearchValue("Geolocation not supported by your browser");
+      setTimeout(() => setSearchValue(""), 2000);
       return;
     }
     
     setIsLoading(true);
-    setError(null);
+    
+    // Set a timeout for the geolocation request
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      // Use non-modal feedback
+      setSearchValue("Location request timed out");
+      setTimeout(() => setSearchValue(""), 2000);
+    }, 10000);
     
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        clearTimeout(timeoutId);
         const coordinates = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
         
+        // Update location immediately regardless of map status
+        const updatedLocation = {
+          address: `Current Location (${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)})`,
+          coordinates
+        };
+        
+        setSelectedLocation(updatedLocation);
+        if (onLocationSelect) {
+          onLocationSelect(updatedLocation);
+        }
+        
+        // Then try to update the map
         if (leafletMap.current && leafletMarker.current) {
-          leafletMap.current.setView([coordinates.lat, coordinates.lng], 16);
-          leafletMarker.current.setLatLng([coordinates.lat, coordinates.lng]);
-          updateLocationFromCoordinates(coordinates);
+          try {
+            leafletMap.current.setView([coordinates.lat, coordinates.lng], 16);
+            leafletMarker.current.setLatLng([coordinates.lat, coordinates.lng]);
+            updateLocationFromCoordinates(coordinates);
+          } catch (e) {
+            console.warn('Error updating map with current location:', e);
+          }
         }
         
         setIsLoading(false);
       },
       (error) => {
-        console.error('Error getting current location:', error);
-        let errorMessage;
+        clearTimeout(timeoutId);
+        console.warn('Error getting current location:', error);
         
+        let errorMessage = '';
         switch(error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Location permission was denied. Please enable location access in your browser settings.';
+            errorMessage = 'Location permission denied';
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information is unavailable.';
+            errorMessage = 'Location unavailable';
             break;
           case error.TIMEOUT:
-            errorMessage = 'The request to get your location timed out.';
+            errorMessage = 'Location request timed out';
             break;
           default:
-            errorMessage = 'An unknown error occurred while getting your location.';
+            errorMessage = 'Could not get location';
         }
         
-        setError(errorMessage);
+        // Use non-modal feedback
+        setSearchValue(errorMessage);
+        setTimeout(() => setSearchValue(""), 2000);
+        
         setIsLoading(false);
       },
       { 
@@ -407,45 +496,10 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
     );
   };
 
-  const handleSetLocation = () => {
-    if (onLocationSelect && selectedLocation) {
-      onLocationSelect(selectedLocation);
-    }
-  };
-
-  const handleSelectNearbyPlace = (place) => {
-    if (!leafletMap.current || !leafletMarker.current) return;
-    
-    try {
-      const coordinates = {
-        lat: parseFloat(place.lat),
-        lng: parseFloat(place.lon)
-      };
-      
-      leafletMap.current.setView([coordinates.lat, coordinates.lng], 17);
-      leafletMarker.current.setLatLng([coordinates.lat, coordinates.lng]);
-      
-      const address = place.display_name;
-      const updatedLocation = {
-        address,
-        coordinates
-      };
-      
-      setSelectedLocation(updatedLocation);
-      setSearchValue(address);
-      
-      if (onLocationSelect) {
-        onLocationSelect(updatedLocation);
-      }
-    } catch (error) {
-      console.error("Error selecting nearby place:", error);
-      setError("Could not select this location. Please try another.");
-    }
-  };
-
   return (
     <div className="space-y-3">
-      <form onSubmit={handleSearchSubmit} className="flex gap-2" noValidate>
+      {/* Use onSubmit on the form element which correctly prevents default */}
+      <form onSubmit={handleSearchSubmit} className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
           <input
@@ -458,25 +512,18 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
           />
         </div>
         <Button 
-          type="button" 
+          type="submit" 
           variant="secondary" 
-          size="sm" 
-          disabled={isLoading}
-          onClick={(e) => {
-            e.preventDefault();
-            handleSearchSubmit();
-          }}
+          size="sm"
+          disabled={isSearching || !searchValue.trim()}
         >
-          Search
+          {isSearching ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            "Search"
+          )}
         </Button>
       </form>
-      
-      {error && (
-        <div className="bg-red-900/40 border border-red-800 text-red-200 px-3 py-2 rounded-lg text-sm flex items-center">
-          <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
       
       <div className="flex gap-2">
         <Button 
@@ -484,8 +531,8 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
           variant="secondary" 
           size="sm"
           onClick={handleUseCurrentLocation}
-          disabled={isLoading}
           className="text-xs"
+          disabled={isLoading}
         >
           <MapPin className="h-3 w-3 mr-1" />
           Use Current Location
@@ -494,8 +541,7 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
           type="button" 
           variant="primary" 
           size="sm"
-          onClick={handleSetLocation}
-          disabled={isLoading}
+          onClick={() => onLocationSelect && onLocationSelect(selectedLocation)}
           className="text-xs ml-auto"
         >
           <Check className="h-3 w-3 mr-1" />
@@ -505,11 +551,37 @@ const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates
       
       <div 
         ref={mapRef} 
-        className="w-full h-64 rounded-lg overflow-hidden border border-slate-700"
+        className="w-full h-64 rounded-lg overflow-hidden border border-slate-700 relative"
       >
         {isLoading && (
-          <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-            <div className="text-gray-400">Loading map...</div>
+          <div className="absolute inset-0 bg-slate-800 bg-opacity-75 flex items-center justify-center z-10">
+            <div className="text-gray-400 flex items-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading map...
+            </div>
+          </div>
+        )}
+        
+        {mapError && (
+          <div className="absolute inset-0 bg-slate-800 flex items-center justify-center z-10">
+            <div className="text-center p-4">
+              <div className="text-red-400 mb-2">Unable to load map</div>
+              <Button 
+                type="button" 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => {
+                  setIsLoading(true);
+                  setMapError(false);
+                  setTimeout(initMap, 500);
+                }}
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         )}
       </div>

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 import { 
   Search, Filter, ChevronDown, ArrowUpDown, 
   CheckCircle, XCircle, Eye, MessageSquare,
@@ -7,6 +6,8 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+// Removed AuthorityWalletConnectButton import
+// import AuthorityWalletConnectButton from '../components/wallet/Authority/AuthorityWalletConnectButton';
 
 // Mock data for reports
 const mockReports = [
@@ -272,16 +273,19 @@ const AuthorityPage = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          {/* Chat feature commented out
                           <Button 
                             variant="ghost" 
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/authority/chat/${report.id}`);
+                              // Replace with your navigation function
+                              window.location.href = `/authority/chat/${report.id}`;
                             }}
                           >
                             <MessageSquare className="h-4 w-4" />
                           </Button>
+                          */}
                         </div>
                       </td>
                     </tr>
@@ -396,6 +400,7 @@ const AuthorityPage = () => {
 
   return (
     <div>
+      {/* Simplified header without the wallet button */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Authority Dashboard</h1>
         <p className="text-gray-400">

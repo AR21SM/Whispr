@@ -83,12 +83,24 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-primary-400 transition-colors">
+                <a href="terms-of-service" className="text-gray-400 hover:text-primary-400 transition-colors">
                   Terms of Service
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-primary-400 transition-colors">
+              <a 
+                  href="/#faq" 
+                  className="text-gray-400 hover:text-primary-400 transition-colors"
+                  onClick={(e) => {
+                    // If we're already on the homepage, use smooth scrolling
+                    if (window.location.pathname === '/') {
+                      e.preventDefault();
+                      const element = document.getElementById('faq');
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    // Otherwise, the browser will navigate to /#faq
+                  }}
+                >
                   FAQ
                 </a>
               </li>

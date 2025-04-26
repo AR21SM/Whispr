@@ -3,12 +3,17 @@ import { Link, useLocation } from 'react-router-dom';
 import { Shield, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WalletConnectButton from '../wallet/WalletConnectButton';
+import AuthorityWalletConnectButton from '../wallet/Authority/AuthorityWalletConnectButton';
+import useAuthorityWalletConnect from '../wallet/Authority/AuthorityWalletConnect';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState(null);
   const location = useLocation();
+  
+  // Use the authority wallet connect hook to check if an authority wallet is connected
+  const { isAuthorized } = useAuthorityWalletConnect();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,7 +63,7 @@ const Navbar = () => {
               whileHover={{ rotate: 10 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <Shield className="h-8 w-8 text-primary-500" />
+              <Shield className={`h-8 w-8 ${isAuthorized ? 'text-red-500' : 'text-primary-500'}`} />
             </motion.div>
             <div className="flex flex-col">
               <span className="font-bold text-xl text-white">Whispr</span>
@@ -74,7 +79,9 @@ const Navbar = () => {
                 layoutId="navbar-indicator"
                 className="absolute rounded-md z-[-1]"
                 style={{
-                  boxShadow: "0 0 10px rgba(123, 97, 255, 0.3)"
+                  boxShadow: isAuthorized 
+                    ? "0 0 10px rgba(239, 68, 68, 0.3)" 
+                    : "0 0 10px rgba(123, 97, 255, 0.3)"
                 }}
                 transition={{
                   type: "spring",
@@ -89,7 +96,9 @@ const Navbar = () => {
                     initial={{ opacity: 0 }}
                     animate={{ 
                       opacity: 1,
-                      background: "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
+                      background: isAuthorized 
+                        ? "radial-gradient(circle at center, rgba(239, 68, 68, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
+                        : "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
                     }}
                     transition={{ duration: 0.3 }}
                   />
@@ -100,7 +109,9 @@ const Navbar = () => {
                     initial={{ opacity: 0 }}
                     animate={{ 
                       opacity: 1,
-                      background: "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
+                      background: isAuthorized 
+                        ? "radial-gradient(circle at center, rgba(239, 68, 68, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
+                        : "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
                     }}
                     transition={{ duration: 0.3 }}
                   />
@@ -111,7 +122,9 @@ const Navbar = () => {
                     initial={{ opacity: 0 }}
                     animate={{ 
                       opacity: 1, 
-                      background: "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
+                      background: isAuthorized 
+                        ? "radial-gradient(circle at center, rgba(239, 68, 68, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
+                        : "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
                     }}
                     transition={{ duration: 0.3 }}
                   />
@@ -122,7 +135,9 @@ const Navbar = () => {
                     initial={{ opacity: 0 }}
                     animate={{ 
                       opacity: 1,
-                      background: "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)" 
+                      background: isAuthorized 
+                        ? "radial-gradient(circle at center, rgba(239, 68, 68, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)"
+                        : "radial-gradient(circle at center, rgba(123, 97, 255, 0.15) 0%, rgba(28, 25, 38, 0.6) 100%)" 
                     }}
                     transition={{ duration: 0.3 }}
                   />
@@ -153,7 +168,7 @@ const Navbar = () => {
                     to={link.path}
                     className={`relative px-4 py-2 rounded-md transition-colors ${
                       isActive
-                        ? 'text-primary-400 font-medium'
+                        ? isAuthorized ? 'text-red-400 font-medium' : 'text-primary-400 font-medium'
                         : 'text-gray-300 hover:text-white'
                     }`}
                     onMouseEnter={() => setHoveredLink(link.path)}
@@ -172,8 +187,10 @@ const Navbar = () => {
                           layoutId="bottom-border"
                           className="absolute left-0 right-0 h-0.5 bottom-[-3px]"
                           style={{
-                            backgroundColor: "#8257ff", /* Matching the purple color from image */
-                            boxShadow: "0 0 8px rgba(130, 87, 255, 0.6)"
+                            backgroundColor: isAuthorized ? "#ef4444" : "#8257ff",
+                            boxShadow: isAuthorized 
+                              ? "0 0 8px rgba(239, 68, 68, 0.6)" 
+                              : "0 0 8px rgba(130, 87, 255, 0.6)"
                           }}
                           initial={{ width: "0%" }}
                           animate={{ width: "100%" }}
@@ -187,11 +204,13 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Right section with wallet button */}
+          {/* Right section with wallet button - Show Authority wallet button if authorized */}
           <div className="hidden md:block">
-            <WalletConnectButton 
-              className="rounded-full"
-            />
+            {isAuthorized ? (
+              <AuthorityWalletConnectButton className="rounded-full" />
+            ) : (
+              <WalletConnectButton className="rounded-full" />
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -222,7 +241,7 @@ const Navbar = () => {
                   to={link.path}
                   className={`block px-4 py-3 rounded-md ${
                     location.pathname === link.path
-                      ? 'bg-dark-700 text-primary-400'
+                      ? isAuthorized ? 'bg-red-900/30 text-red-400' : 'bg-dark-700 text-primary-400'
                       : 'text-gray-300'
                   }`}
                 >
@@ -239,8 +258,10 @@ const Navbar = () => {
                       <motion.div 
                         layoutId="mobile-indicator"
                         style={{
-                          backgroundColor: "#8257ff", /* Matching the purple color from image */
-                          boxShadow: "0 0 6px rgba(130, 87, 255, 0.5)"
+                          backgroundColor: isAuthorized ? "#ef4444" : "#8257ff",
+                          boxShadow: isAuthorized 
+                            ? "0 0 6px rgba(239, 68, 68, 0.5)" 
+                            : "0 0 6px rgba(130, 87, 255, 0.5)"
                         }}
                         className="h-0.5 mt-1"
                         initial={{ width: "0%" }}
@@ -251,11 +272,13 @@ const Navbar = () => {
                   </motion.div>
                 </Link>
               ))}
-              {/* Mobile wallet button */}
+              {/* Mobile wallet button - Show Authority wallet button if authorized */}
               <div className="mt-2">
-                <WalletConnectButton 
-                  className="w-full justify-center"
-                />
+                {isAuthorized ? (
+                  <AuthorityWalletConnectButton className="w-full justify-center" />
+                ) : (
+                  <WalletConnectButton className="w-full justify-center" />
+                )}
               </div>
             </div>
           </motion.div>

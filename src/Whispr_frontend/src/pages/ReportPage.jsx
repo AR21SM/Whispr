@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Upload, FilePlus, Camera, AlertTriangle, Info, X, Plus, ChevronRight, Check,
@@ -8,7 +8,9 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import MapSelector from '../components/ui/MapSelector';
 import { submitReport } from '../api/whisprBackend';
+
 const ReportPage = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState('details');
   const [reportData, setReportData] = useState({
     title: '',
@@ -24,6 +26,14 @@ const ReportPage = () => {
     stakeAmount: 10
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Add this useEffect to scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, [currentStep]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -56,7 +66,14 @@ const ReportPage = () => {
       evidenceFiles: prev.evidenceFiles.filter((_, i) => i !== index)
     }));
   };
+
   const handleNextStep = () => {
+    // Scroll to top before changing the step
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
     if (currentStep === 'details') setCurrentStep('evidence');
     else if (currentStep === 'evidence') setCurrentStep('staking');
     else if (currentStep === 'staking') setCurrentStep('review');
@@ -81,6 +98,12 @@ const ReportPage = () => {
             saveReportToLocalStorage(submittedReport);
             
             setCurrentStep('confirmation');
+
+            // Scroll to top after submission is complete
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth'
+            });
           } else {
             alert(`Error submitting report: ${response.error}`);
           }
@@ -113,11 +136,21 @@ const ReportPage = () => {
     }
   };
 
-
   const handlePrevStep = () => {
+    // Scroll to top before changing the step
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
     if (currentStep === 'evidence') setCurrentStep('details');
     else if (currentStep === 'staking') setCurrentStep('evidence');
     else if (currentStep === 'review') setCurrentStep('staking');
+  };
+
+  const handleGoToDashboard = () => {
+    // Navigate to dashboard
+    navigate('/dashboard');
   };
 
   const isStepComplete = () => {
@@ -297,7 +330,6 @@ const ReportPage = () => {
               onChange={handleInputChange}
               className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
             />
-            {/* <Clock className="absolute right-3 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" /> */}
           </div>
         </div>
       </div>
@@ -351,7 +383,6 @@ const ReportPage = () => {
             variant="ghost" 
             type="button" 
             onClick={() => {
-              // On mobile devices, this could open the camera with appropriate accept type
               document.getElementById('evidence').click();
             }}
           >
@@ -576,6 +607,7 @@ const ReportPage = () => {
       </div>
     </div>
   );
+
   const renderConfirmationStep = () => (
     <div className="text-center py-12 max-w-md mx-auto fade-in">
       <div className="w-24 h-24 bg-green-900 bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -595,7 +627,7 @@ const ReportPage = () => {
         You'll receive notifications when there are updates.
       </p>
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button variant="primary" onClick={() => navigate('/dashboard')}>
+        <Button variant="primary" onClick={handleGoToDashboard}>
           Go to Dashboard
         </Button>
         <Button variant="secondary" onClick={() => {
@@ -614,13 +646,17 @@ const ReportPage = () => {
             stakeAmount: 10,
             id: null
           });
+          // Scroll to top when starting a new report
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
         }}>
           Submit Another Report
         </Button>
       </div>
     </div>
   );
-
 
   const renderCurrentStep = () => {
     switch (currentStep) {

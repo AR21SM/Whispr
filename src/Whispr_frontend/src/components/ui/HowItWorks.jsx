@@ -75,11 +75,29 @@ const HowItWorks = () => {
               >
                 <div className={`flex-1 ${index % 2 === 0 ? 'md:text-right md:pr-16' : 'md:text-left md:pl-16'} pb-8 md:pb-0`}>
                   <motion.div 
-                    whileHover={{ scale: 1.05 }}
-                    className={`glass-card p-8 rounded-xl inline-block max-w-md`}
+                    whileHover={{ 
+                      scale: 1.03,
+                      boxShadow: "0 0 15px 2px rgba(101, 75, 228, 0.2)",
+                      transition: { 
+                        duration: 0.4, 
+                        ease: "easeOut" 
+                      }
+                    }}
+                    className={`glass-card p-8 rounded-xl inline-block max-w-md transition-all cursor-pointer`}
                   >
                     <h3 className="text-2xl font-bold text-white mb-4">{step.title}</h3>
                     <p className="text-gray-300">{step.description}</p>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      className="h-0.5 bg-gradient-to-r from-secondary-400 to-primary-400 mt-4"
+                      whileHover={{ 
+                        width: "80%", 
+                        transition: { 
+                          duration: 0.6, 
+                          ease: "easeInOut" 
+                        }
+                      }}
+                    />
                   </motion.div>
                 </div>
                 
@@ -89,7 +107,11 @@ const HowItWorks = () => {
                     whileInView={{ scale: 1, opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
-                    className={`rounded-full w-16 h-16 ${step.color} flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg`}
+                    whileHover={{
+                      boxShadow: "0 0 15px 2px rgba(101, 75, 228, 0.3)",
+                      transition: { duration: 0.4, ease: "easeOut" }
+                    }}
+                    className={`rounded-full w-16 h-16 ${step.color} flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg transition-all`}
                   >
                     {step.id}
                   </motion.div>
@@ -103,9 +125,31 @@ const HowItWorks = () => {
                     transition={{ delay: index * 0.1 + 0.1, duration: 0.5 }}
                     className="flex md:justify-center"
                   >
-                    <div className={`${step.color} bg-opacity-20 p-4 rounded-full`}>
-                      <step.icon className="w-8 h-8 text-white" />
-                    </div>
+                    <motion.div 
+                      className={`bg-dark-700/50 p-4 rounded-full cursor-pointer transition-all duration-300`}
+                      whileHover={{ 
+                        scale: 1.1,
+                        boxShadow: "0 0 15px 2px rgba(101, 75, 228, 0.3)",
+                        backgroundColor: "rgba(101, 75, 228, 0.15)",
+                        transition: { 
+                          duration: 0.5, 
+                          ease: "easeInOut" 
+                        } 
+                      }}
+                    >
+                      <motion.div
+                        whileHover={{ 
+                          rotate: [0, -5, 5, -3, 0],
+                          transition: { 
+                            duration: 0.8, 
+                            ease: "easeInOut",
+                            times: [0, 0.2, 0.5, 0.8, 1] 
+                          }
+                        }}
+                      >
+                        <step.icon className="w-8 h-8 text-primary-400" />
+                      </motion.div>
+                    </motion.div>
                   </motion.div>
                 </div>
               </motion.div>

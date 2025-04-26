@@ -1,15 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import useWalletConnect from './WalletConnect';
-import { LogIn, LogOut, Wallet, Copy, CheckCircle, AlertTriangle } from 'lucide-react';
+import useAuthorityWalletConnect from './AuthorityWalletConnect';
+import { LogIn, LogOut, Shield, Copy, CheckCircle, AlertTriangle } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 // Global notification container - will be created if it doesn't exist
 const getNotificationContainer = () => {
-  let container = document.getElementById('notification-container');
+  let container = document.getElementById('authority-notification-container');
   if (!container) {
     container = document.createElement('div');
-    container.id = 'notification-container';
+    container.id = 'authority-notification-container';
     container.className = 'fixed bottom-4 right-4 z-50 flex flex-col space-y-2';
     document.body.appendChild(container);
   }
@@ -26,29 +26,33 @@ const addAnimationStyles = () => {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
       }
-      .animate-slide-in {
-        animation: slideInRight 0.3s forwards;
+      @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
       }
     `;
     document.head.appendChild(style);
   }
 };
 
-// Call this once to ensure animations are defined
-addAnimationStyles();
-
 const Notification = ({ type, message, onClose }) => {
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
   return createPortal(
-    <div 
-      className={`max-w-sm p-4 rounded-lg shadow-lg flex items-center justify-between animate-slide-in ${
-        type === 'success' 
-          ? 'bg-purple-900 text-purple-100 border-l-4 border-purple-400' 
-          : 'bg-red-900 text-red-100 border-l-4 border-red-500'
+    <div
+      className={`flex items-center justify-between p-4 rounded-lg shadow-lg text-white animate-[slideInRight_0.3s_ease-out] ${
+        type === 'success' ? 'bg-green-800/90' : 'bg-red-800/90'
       }`}
+      style={{ backdropFilter: 'blur(8px)' }}
     >
       <div className="flex items-center">
         {type === 'success' ? (
-          <CheckCircle className="h-5 w-5 text-purple-300 mr-2" /> 
+          <CheckCircle className="h-5 w-5 text-green-300 mr-2" />
         ) : (
           <AlertTriangle className="h-5 w-5 text-red-300 mr-2" />
         )}
@@ -65,9 +69,15 @@ const Notification = ({ type, message, onClose }) => {
   );
 };
 
-const WalletConnectButton = ({ className = "" }) => {
+const AuthorityWalletConnectButton = ({ className = "" }) => {
+  // FIXED: Moved useLayoutEffect inside the component
+  React.useEffect(() => {
+    addAnimationStyles();
+  }, []);
+
   const {
     isConnected,
+    isAuthorized,
     walletInfo,
     isLoading,
     error,
@@ -76,7 +86,7 @@ const WalletConnectButton = ({ className = "" }) => {
     disconnectWallet,
     setError,
     setSuccessMessage
-  } = useWalletConnect();
+  } = useAuthorityWalletConnect();
 
   const [copied, setCopied] = React.useState(false);
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
@@ -124,7 +134,7 @@ const WalletConnectButton = ({ className = "" }) => {
           whileTap={{ scale: 0.95 }}
           onClick={connectWallet}
           disabled={isLoading}
-          className={`btn-primary text-sm py-1.5 px-3 flex items-center gap-1.5 ${className}`}
+          className={`bg-red-600 hover:bg-red-700 text-white text-sm py-1.5 px-3 rounded-full flex items-center gap-1.5 ${className}`}
         >
           {isLoading ? (
             <>
@@ -136,22 +146,23 @@ const WalletConnectButton = ({ className = "" }) => {
             </> 
           ) : (
             <>
-              <span className="text-s">Connect Wallet</span>
-              <LogIn className="w-4 h-4" />
+              <span className="text-s">Authority Connect</span>
+              <Shield className="w-4 h-4" />
             </>
           )}
         </motion.button>
       ) : (
         <div className="flex items-center space-x-1.5">
           <div 
-            className="bg-slate-800 border border-slate-700 text-white px-2 py-1 rounded-lg shadow-inner flex items-center cursor-pointer group hover:bg-slate-700"
+            className={`border text-white px-2 py-1 rounded-lg shadow-inner flex items-center cursor-pointer group hover:bg-red-900/30 ${isAuthorized ? 'bg-red-900/20 border-red-700/50' : 'bg-slate-800 border-slate-700'}`}
             onClick={copyToClipboard}
           >
-            <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5"></div>
+            <div className={`h-1.5 w-1.5 rounded-full mr-1.5 ${isAuthorized ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
             <span className="text-xs font-medium">
-              {walletInfo?.principal && `${walletInfo.principal.substring(0, 4)}...${walletInfo.principal.substring(walletInfo.principal.length - 3)} (User)`}
+              {walletInfo?.principal && `${walletInfo.principal.substring(0, 4)}...${walletInfo.principal.substring(walletInfo.principal.length - 3)}`}
+              {isAuthorized ? ' (Auth)' : ''}
             </span>
-            <div className="ml-1.5 text-slate-400 group-hover:text-purple-300">
+            <div className="ml-1.5 text-slate-400 group-hover:text-red-300">
               {copied ? (
                 <CheckCircle className="h-3 w-3" />
               ) : (
@@ -165,7 +176,7 @@ const WalletConnectButton = ({ className = "" }) => {
             whileTap={{ scale: 0.95 }}
             onClick={handleDisconnect}
             disabled={isDisconnecting}
-            className="bg-purple-900/30 hover:bg-purple-900/50 text-white text-xs py-1 px-2 rounded-lg flex items-center gap-1 border border-purple-800/50"
+            className="bg-red-900/30 hover:bg-red-900/50 text-white text-xs py-1 px-2 rounded-lg flex items-center gap-1 border border-red-800/50"
             title="Disconnect"
           >
             {isDisconnecting ? (
@@ -186,4 +197,4 @@ const WalletConnectButton = ({ className = "" }) => {
   );
 };
 
-export default WalletConnectButton;
+export default AuthorityWalletConnectButton;

@@ -1,25 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// Rename to follow React hook naming convention
-const useWalletConnect = () => {
+// Authorized principal ID that's allowed to access authority features
+const AUTHORIZED_PRINCIPAL = "d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe";
+
+const useAuthorityWalletConnect = () => {
   const [isConnected, setIsConnected] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [walletInfo, setWalletInfo] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [initialCheckComplete, setInitialCheckComplete] = useState(false); // Track initial check
+  const [initialCheckComplete, setInitialCheckComplete] = useState(false);
   
   // Check if wallet is already connected on component mount
   useEffect(() => {
     const checkConnection = async () => {
-      // Set loading state explicitly
       setIsLoading(true);
       
       // Make sure the IC object exists in window
       if (typeof window.ic?.plug === 'undefined') {
         console.log("Plug wallet extension not detected");
         setIsLoading(false);
-        setInitialCheckComplete(true); // Mark check as complete even if plug is not found
+        setInitialCheckComplete(true);
         return;
       }
 
@@ -30,17 +32,25 @@ const useWalletConnect = () => {
           setIsConnected(true);
           // Get principal ID
           const principal = await window.ic.plug.agent.getPrincipal();
+          const principalText = principal.toString();
+          
+          // Check if this is an authorized authority wallet
+          const authorized = principalText === AUTHORIZED_PRINCIPAL;
+          setIsAuthorized(authorized);
+          
+          if (!authorized) {
+            setError("This wallet is not authorized for authority access");
+          }
           
           setWalletInfo({
-            principal: principal.toString(),
-            // Use a static account ID or derive it using a different method
+            principal: principalText,
+            isAuthority: authorized,
             accountId: 'c6ea0cfefa62ef67b27d7ac212e2217b8044a345ea8f860f72b719e403398a2b'
           });
         }
       } catch (error) {
         console.error("Error checking wallet connection:", error);
       } finally {
-        // Always mark loading as complete and check as done
         setIsLoading(false);
         setInitialCheckComplete(true);
       }
@@ -54,7 +64,7 @@ const useWalletConnect = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Connect to Plug wallet
+  // Connect to Plug wallet for authority access
   const connectWallet = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -68,14 +78,14 @@ const useWalletConnect = () => {
 
     try {
       // Whitelist of canisters to connect with
-      const whitelist = []; // Add any canisters you want to connect to
-      const host = "https://mainnet.dfinity.network"; // Or your desired network
+      const whitelist = [];
+      const host = "https://mainnet.dfinity.network";
 
       // Request connection
       const result = await window.ic.plug.requestConnect({
         whitelist,
         host,
-        timeout: 60000, // 60 second timeout
+        timeout: 60000,
       });
 
       if (result) {
@@ -83,20 +93,29 @@ const useWalletConnect = () => {
         
         // Get principal ID
         const principal = await window.ic.plug.agent.getPrincipal();
+        const principalText = principal.toString();
+        
+        // Check if this is an authorized authority wallet
+        const authorized = principalText === AUTHORIZED_PRINCIPAL;
+        setIsAuthorized(authorized);
         
         setWalletInfo({
-          principal: principal.toString(),
-          // Use a static account ID or derive it using a different method
+          principal: principalText,
+          isAuthority: authorized,
           accountId: 'c6ea0cfefa62ef67b27d7ac212e2217b8044a345ea8f860f72b719e403398a2b'
         });
         
-        setSuccessMessage("Wallet connected successfully!");
-        
-        // Handle redirect if there was a saved path
-        const redirectPath = sessionStorage.getItem('redirectAfterConnect');
-        if (redirectPath) {
-          sessionStorage.removeItem('redirectAfterConnect');
-          window.location.href = redirectPath;
+        if (authorized) {
+          setSuccessMessage("Authority wallet connected successfully!");
+          
+          // Handle redirect if there was a saved path
+          const redirectPath = sessionStorage.getItem('authorityRedirectAfterConnect');
+          if (redirectPath) {
+            sessionStorage.removeItem('authorityRedirectAfterConnect');
+            window.location.href = redirectPath;
+          }
+        } else {
+          setError("Connected wallet is not authorized for authority access");
         }
         
         setTimeout(() => setSuccessMessage(null), 3000);
@@ -111,7 +130,7 @@ const useWalletConnect = () => {
     }
   }, []);
 
-  // Disconnect wallet with guaranteed disconnection
+  // Disconnect wallet
   const disconnectWallet = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -123,19 +142,18 @@ const useWalletConnect = () => {
           await window.ic.plug.disconnect();
         } catch (apiError) {
           console.warn("Error with plug.disconnect API:", apiError);
-          // Continue with fallback even if API fails
         }
       }
       
-      // Always reset React state regardless of API success
+      // Reset React state
       setIsConnected(false);
+      setIsAuthorized(false);
       setWalletInfo(null);
       
-      // Force clear localStorage entries that might be related to wallet connection
+      // Clear localStorage entries
       try {
         localStorage.removeItem('ic-identity');
         localStorage.removeItem('ic-delegation');
-        // Add other potential wallet-related keys if needed
       } catch (storageError) {
         console.warn("Error clearing localStorage:", storageError);
       }
@@ -147,7 +165,7 @@ const useWalletConnect = () => {
         } catch (err) {}
       }
       
-      setSuccessMessage("Wallet disconnected successfully!");
+      setSuccessMessage("Authority wallet disconnected successfully!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Disconnect error:", error);
@@ -155,6 +173,7 @@ const useWalletConnect = () => {
       
       // Even if there's an error, still reset the React state as a fallback
       setIsConnected(false);
+      setIsAuthorized(false);
       setWalletInfo(null);
     } finally {
       setIsLoading(false);
@@ -163,11 +182,12 @@ const useWalletConnect = () => {
 
   return {
     isConnected,
+    isAuthorized,
     walletInfo,
     isLoading,
     error,
     successMessage,
-    initialCheckComplete, // Export this new state
+    initialCheckComplete,
     connectWallet,
     disconnectWallet,
     setError,
@@ -175,5 +195,4 @@ const useWalletConnect = () => {
   };
 };
 
-// Export with the new name
-export default useWalletConnect;
+export default useAuthorityWalletConnect;

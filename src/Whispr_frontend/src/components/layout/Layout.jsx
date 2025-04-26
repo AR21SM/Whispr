@@ -8,6 +8,7 @@ import ParticleBackground from '../three/ParticleBackground';
 const Layout = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     // Simulate a loading state
@@ -55,7 +56,7 @@ const Layout = () => {
       <Navbar />
       
       <main className="flex-grow z-10 relative pt-24 pb-24">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 pb-16">
+        <div className={`container mx-auto ${isHomePage ? '' : 'px-4 md:px-6 lg:px-8'} pb-16`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

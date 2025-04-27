@@ -1,61 +1,117 @@
-# `Whispr`
+# 🕵️ Whispr - Decentralized Crime Reporting Platform
 
-Welcome to your new `Whispr` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+![Whispr](src/Whispr_frontend/src/assets/readme_images/home1.png) <!-- Add banner image -->
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+A blockchain-powered platform for anonymous crime reporting, leveraging Web3 technologies to protect informers while combating illegal activities.
 
-To learn more before you start working with `Whispr`, see the following documentation available online:
+## 🚀 Project Overview
+**Whispr** revolutionizes crime reporting by combining zero-knowledge proofs with Internet Computer Blockchain (ICP) to ensure informer anonymity. Citizens can securely report crimes, stake tokens to validate authenticity, and earn rewards for verified reports. Authorities gain a powerful dashboard to review submissions and maintain public safety.
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Rust Canister Development Guide](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
+🔗 Live Demo: [whispr.icp.app](https://aoicy-vyaaa-aaaag-aua4a-cai.icp0.io/) 
 
-If you want to start working on your project right away, you might want to try the following commands:
+## 🔑 Key Features
+### 🛡️ For Informers
+- **Anonymous Reporting**  
+  - Blockchain-encrypted submissions with ZK proofs
+  - Multi-category reporting (Theft, Violence, Drug Crimes, etc.)
+  - Encrypted media uploads (images/videos)
+  
+  ![Report Interface](src/Whispr_frontend/src/assets/readme_images/report1.png)
 
+  - Token staking system to deter false reports
+
+  ![Token Staking](src/Whispr_frontend/src/assets/readme_images/token_staking1.png) 
+  
+  ![Report Submitted](src/Whispr_frontend/src/assets/readme_images/report_submitted1.png) 
+
+### 💰 Incentive System
+- **Significant Rewards** for verified reports(upto 10 times the staked tokens)
+- Dynamic staking: Higher stakes = Higher credibility
+- Real-time reward tracking in user dashboard
+
+### 🕵️ Authority Tools
+![Authority Dashboard](src/Whispr_frontend/src/assets/readme_images/authority_dashboard1.png)
+
+- Evidence decryption protocols
+- Anonymous chat with informers
+- Bulk report verification
+- Automated token reward distribution
+
+### 🔒 Security
+- ICP blockchain storage
+- Role-based access control
+- End-to-end encrypted communications
+- Tamper-proof evidence logs
+
+## ⚙️ How It Works
+![Workflow Diagram](src/Whispr_frontend/src/assets/readme_images/flow1.png)
+
+1. **Connect & Verify**  
+   Anonymous wallet connection via plug wallet
+2. **Submit Evidence**  
+   Encrypt and upload evidence to blockchain
+3. **Stake Tokens**  
+   Lock tokens to validate report authenticity
+4. **Authority Review**  
+   Authorities verify while preserving anonymity
+
+## 🛠️ Tech Stack
+**Frontend**  
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+- Javascript
+- Tailwind CSS
+- Web3.js
+
+**Backend**  
+![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
+- Internet Computer Blockchain
+- Candid Interface
+
+**Security**  
+- Zero-Knowledge Proofs
+- AES-256 Encryption
+- ICP Identity Protocol
+
+<!-- ## 📂 Folder Structure
+Whispr/
+├── frontend/ # React application
+│ ├── public/
+│ └── src/
+│ ├── components/ # UI components
+│ └── pages/ # Main application views
+├── backend/ # Rust canisters
+│ ├── reports/ # Reporting logic
+│ └── tokens/ # Token management
+├── assets/ # Design files & images
+└── declarations/ # Auto-generated Candid interfaces -->
+
+
+## 🚨 Getting Started
+### Prerequisites
+- Node.js ≥18.x
+- DFX SDK ≥0.15.x
+- Rust ≥1.70
+
+### Installation
 ```bash
-cd Whispr/
-dfx help
-dfx canister --help
-```
+git clone https://github.com/your-org/whispr.git
+cd Whispr
 
-## Running the project locally
-
-If you want to test your project locally, you can use the following commands:
-
-```bash
-# Starts the replica, running in the background
+# Start local replica
 dfx start --background
 
-# Deploys your canisters to the replica and generates your candid interface
+# Deploy canisters
 dfx deploy
+
+# Start frontend
+npm run dev
+Access the application at:
+http://localhost:4943
 ```
+📸 Screenshots
+![Home](src/Whispr_frontend/src/assets/readme_images/home1.png)	
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
+![Dashboard](src/Whispr_frontend/src/assets/readme_images/dashboard1.png)	
 
-If you have made changes to your backend canister, you can generate a new candid interface with
-
-```bash
-npm run generate
-```
-
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
-
-If you are making frontend changes, you can start a development server with
-
-```bash
-npm start
-```
-
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
-
-### Note on frontend environment variables
-
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
-
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
+![Authority](src/Whispr_frontend/src/assets/readme_images/authority_dashboard1.png)	
+	

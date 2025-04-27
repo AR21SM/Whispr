@@ -1,4 +1,4 @@
-# 🕵️ Whispr - Decentralized Crime Reporting Platform
+#  Whispr - Decentralized Crime Reporting Platform
 
 ![Whispr](src/Whispr_frontend/src/assets/readme_images/home1.png) <!-- Add banner image -->
 

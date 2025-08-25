@@ -9,6 +9,7 @@ dependencies = [
  "candid",
  "hex",
  "ic-cdk",
+ "ic-cdk-macros",
  "ic-cdk-timers",
  "ic-stable-structures",
  "serde",

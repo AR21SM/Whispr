@@ -235,6 +235,31 @@ pub fn add_authority(authority: Authority) {
     });
 }
 
+pub fn get_authority(id: Principal) -> Option<Authority> {
+    AUTHORITIES.with(|authorities| {
+        authorities.borrow().get(&id)
+    })
+}
+
+pub fn update_authority(authority: Authority) {
+    AUTHORITIES.with(|authorities| {
+        authorities.borrow_mut().insert(authority.id, authority);
+    });
+}
+
+pub fn remove_authority(id: Principal) {
+    AUTHORITIES.with(|authorities| {
+        authorities.borrow_mut().remove(&id);
+    });
+}
+
+pub fn get_all_authorities() -> Vec<Authority> {
+    AUTHORITIES.with(|authorities| {
+        let authorities_map = authorities.borrow();
+        authorities_map.iter().map(|(_, authority)| authority).collect()
+    })
+}
+
 // Message operations
 pub fn create_message(message: &Message) -> u64 {
     let id = NEXT_MESSAGE_ID.with(|counter| {
@@ -318,13 +343,21 @@ pub fn initialize_mock_data() {
         return; // Data already exists
     }
     
-    // Create authorities
+    // Create authorities - including the current deployer
+    let current_principal = ic_cdk::caller();
+    let authority_current = Authority {
+        id: current_principal,
+        reports_reviewed: Vec::new(),
+        approval_rate: 0.0,
+    };
+    
     let authority1 = Authority {
         id: Principal::from_text("d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe").unwrap_or_else(|_| Principal::anonymous()),
         reports_reviewed: Vec::new(),
         approval_rate: 0.0,
     };
     
+    add_authority(authority_current);
     add_authority(authority1);
     
     // Create users

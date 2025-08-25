@@ -3,6 +3,7 @@ use ic_stable_structures::{storable::Bound, Storable};
 use serde::Serialize;
 use std::borrow::Cow;
 use std::convert::TryFrom;
+use std::collections::HashMap;
 
 // Report status enum
 #[derive(Clone, Debug, CandidType, Deserialize, Serialize, PartialEq, Eq)]
@@ -21,6 +22,19 @@ pub struct EvidenceFile {
     pub file_type: String,
     pub data: Vec<u8>,
     pub upload_date: u64,
+}
+
+impl Storable for EvidenceFile {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        let bytes = candid::encode_one(self).unwrap();
+        Cow::Owned(bytes)
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Unbounded;
 }
 
 // Location data
@@ -62,9 +76,7 @@ impl Storable for Report {
         candid::decode_one(&bytes).unwrap()
     }
 
-    fn stable_bound() -> Bound {
-        Bound::Unbounded
-    }
+    const BOUND: Bound = Bound::Unbounded;
 }
 
 // Message for communication between authority and informer
@@ -95,9 +107,7 @@ impl Storable for Message {
         candid::decode_one(&bytes).unwrap()
     }
 
-    fn stable_bound() -> Bound {
-        Bound::Unbounded
-    }
+    const BOUND: Bound = Bound::Unbounded;
 }
 
 // User structure
@@ -121,9 +131,7 @@ impl Storable for User {
         candid::decode_one(&bytes).unwrap()
     }
 
-    fn stable_bound() -> Bound {
-        Bound::Unbounded
-    }
+    const BOUND: Bound = Bound::Unbounded;
 }
 
 // Authority structure with permissions
@@ -144,9 +152,7 @@ impl Storable for Authority {
         candid::decode_one(&bytes).unwrap()
     }
 
-    fn stable_bound() -> Bound {
-        Bound::Unbounded
-    }
+    const BOUND: Bound = Bound::Unbounded;
 }
 
 // Configuration for token rewards
@@ -164,4 +170,48 @@ pub struct AuthorityStats {
     pub reports_verified: u64,
     pub reports_rejected: u64,
     pub total_rewards_distributed: u64,
+}
+
+// Detailed analytics for comprehensive dashboard
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+pub struct DetailedAnalytics {
+    pub total_reports: u64,
+    pub pending_reports: u64,
+    pub approved_reports: u64,
+    pub rejected_reports: u64,
+    pub category_breakdown: std::collections::HashMap<String, (u64, u64, u64)>, // (pending, approved, rejected)
+    pub monthly_submission_trend: std::collections::HashMap<u64, u64>, // month -> count
+    pub average_stake_amount: f64,
+    pub total_staked_amount: u64,
+    pub total_rewards_distributed: u64,
+}
+
+// System health status
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+pub struct SystemHealth {
+    pub status: String,
+    pub total_reports: u64,
+    pub pending_reports: u64,
+    pub system_time: u64,
+    pub memory_usage: u64,
+}
+
+// Search and filter parameters
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+pub struct ReportFilter {
+    pub status: Option<ReportStatus>,
+    pub category: Option<String>,
+    pub date_range: Option<(u64, u64)>, // (start_date, end_date)
+    pub submitter: Option<Principal>,
+    pub min_stake: Option<u64>,
+    pub max_stake: Option<u64>,
+}
+
+// Pagination parameters
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+pub struct PaginationParams {
+    pub page: u64,
+    pub page_size: u64,
+    pub sort_by: Option<String>,
+    pub sort_order: Option<String>, // "asc" or "desc"
 }

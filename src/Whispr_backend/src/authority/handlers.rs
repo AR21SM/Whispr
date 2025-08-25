@@ -3,8 +3,9 @@ use crate::authority::types::*;
 use candid::Principal;
 use ic_cdk::{api, caller};
 
-// Authentication helper function
-fn ensure_authority() -> Result<Principal, String> {
+fn ensure_authority() ->     let report_id = store::create_report(report)?;
+    
+    let mut updated_user = user;lt<Principal, String> {
     let caller = caller();
     
     if caller == Principal::anonymous() {
@@ -18,7 +19,6 @@ fn ensure_authority() -> Result<Principal, String> {
     Ok(caller)
 }
 
-// Ensure authenticated user (non-anonymous)
 fn ensure_authenticated() -> Result<Principal, String> {
     let caller = caller();
     
@@ -29,7 +29,6 @@ fn ensure_authenticated() -> Result<Principal, String> {
     Ok(caller)
 }
 
-// Input validation helpers
 fn validate_report_input(
     title: &str,
     description: &str,
@@ -68,12 +67,10 @@ fn validate_report_input(
     Ok(())
 }
 
-// Initialize system and create mock data
 pub fn init() {
     store::initialize_mock_data();
 }
 
-// Submit a new report (for users)
 
 pub fn submit_report(
     title: String,
@@ -86,22 +83,18 @@ pub fn submit_report(
 ) -> Result<u64, String> {
     let caller = ensure_authenticated()?;
     
-    // Validate inputs
     validate_report_input(&title, &description, &category, stake_amount)?;
     
-    // Validate evidence count
     if evidence_count > 10 {
         return Err("Maximum 10 evidence files allowed".to_string());
     }
     
-    // Get or create user
     let user = match store::get_user(caller) {
         Some(user) => user,
         None => {
-            // New user, create with default balance for testing
             let new_user = User {
                 id: caller,
-                token_balance: 100, // Default balance for new users
+                token_balance: 100,
                 reports_submitted: Vec::new(),
                 rewards_earned: 0,
                 stakes_active: 0,
@@ -112,12 +105,10 @@ pub fn submit_report(
         }
     };
     
-    // Check user balance
     if user.token_balance < stake_amount {
         return Err("Insufficient token balance for staking".to_string());
     }
     
-    // Check if user has too many pending reports (anti-spam)
     let user_reports = store::get_user_reports(caller);
     let pending_count = user_reports.iter()
         .filter(|r| r.status == ReportStatus::Pending)
@@ -127,9 +118,8 @@ pub fn submit_report(
         return Err("You have too many pending reports. Please wait for review.".to_string());
     }
     
-    // Create report
     let report = Report {
-        id: 0, // Will be assigned by create_report
+        id: 0,
         title: title.trim().to_string(),
         description: description.trim().to_string(),
         category: category.to_lowercase(),
@@ -156,7 +146,6 @@ pub fn submit_report(
     updated_user.reports_submitted.push(report_id);
     store::create_or_update_user(updated_user);
     
-    // Add a system message
     let system_message = Message {
         id: 0,
         report_id,
@@ -171,32 +160,27 @@ pub fn submit_report(
     Ok(report_id)
 }
 
-// Get all reports (for authority)
 
 pub fn get_all_reports() -> Result<Vec<Report>, String> {
     ensure_authority()?;
     Ok(store::get_all_reports())
 }
 
-// Get reports by status (for authority)
 
 pub fn get_reports_by_status(status: ReportStatus) -> Result<Vec<Report>, String> {
     ensure_authority()?;
     Ok(store::get_reports_by_status(status))
 }
 
-// Get a single report by ID (for both users and authority)
 
 pub fn get_report(id: u64) -> Vec<Report> {
     match store::get_report(id) {
         Some(report) => {
             let caller = caller();
             
-            // Check if caller is report submitter or an authority
             if report.submitter_id == caller || store::is_authority(caller) {
                 vec![report]
             } else {
-                // Return empty if not authorized
                 vec![]
             }
         },

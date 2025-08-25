@@ -2,8 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Shield, Lock, Upload, Dribbble as ChatBubble, Database, Check,BadgeCheck ,Trophy, FileLock2,MessageSquare   } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import FAQ from '../components/ui/FAQ';
-import HowItWorks from '../components/ui/HowItWorks';
+import FAQ from '../features/home/FAQ';
+import HowItWorks from '../features/home/HowItWorks';
 import FloatingIcons from '../components/three/FloatingIcons';
 import { useWeb3 } from '../context/Web3Context';
 
@@ -28,24 +28,24 @@ const HomePage = () => {
 
   return (
     <div className="overflow-hidden">
-      {/* Hero Section - Further reduced top padding */}
-      <section className="relative min-h-[calc(70vh-60px)] flex items-start justify-center px-4 pt-4 pb-16">
+      {/* Hero Section - Responsive */}
+      <section className="relative min-h-[85vh] sm:min-h-[90vh] lg:min-h-[calc(70vh-60px)] flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 lg:pt-4 pb-16">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 -right-20 w-80 h-80 bg-primary-500/10 rounded-full filter blur-3xl" />
-          <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-secondary-500/10 rounded-full filter blur-3xl" />
+          <div className="absolute top-1/4 -right-10 sm:-right-20 w-40 sm:w-60 lg:w-80 h-40 sm:h-60 lg:h-80 bg-primary-500/10 rounded-full filter blur-3xl" />
+          <div className="absolute bottom-1/4 -left-10 sm:-left-20 w-40 sm:w-60 lg:w-80 h-40 sm:h-60 lg:h-80 bg-secondary-500/10 rounded-full filter blur-3xl" />
         </div>
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="max-w-5xl mx-auto text-center relative z-10 mt-0"
+          className="max-w-5xl mx-auto text-center relative z-10"
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative w-24 h-24 mx-auto mb-2"
+            className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto mb-4 sm:mb-6"
           >
             <FloatingIcons />
           </motion.div>
@@ -54,7 +54,7 @@ const HomePage = () => {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-5xl md:text-7xl font-bold mb-6 tracking-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 tracking-tight leading-tight"
           >
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-secondary-400 to-primary-400">
               Decentralized Crime
@@ -67,7 +67,7 @@ const HomePage = () => {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-xl text-gray-300 max-w-3xl mx-auto mb-12"
+            className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-xs sm:max-w-2xl lg:max-w-3xl mx-auto mb-8 sm:mb-12 px-4 sm:px-0"
           >
             Report illegal activities anonymously and earn rewards for verified reports. Your identity stays protected through blockchain technology.
           </motion.p>
@@ -76,22 +76,22 @@ const HomePage = () => {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.8 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0"
           >
-            <Link to="/report">
+            <Link to="/report" className="w-full sm:w-auto">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="btn-primary flex items-center gap-2"
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base"
               >
                 Start Reporting
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </motion.button>
             </Link>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="btn-secondary"
+              className="btn-secondary w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base"
               onClick={() => {
                 const element = document.getElementById('learn-more');
                 element?.scrollIntoView({ behavior: 'smooth' });
@@ -103,11 +103,10 @@ const HomePage = () => {
         </motion.div>
       </section>
 
-    {/* Stats Section */}
-    {/* Stats Section with smoother transitions */}
-<section className="py-12 relative">
-  <div className="max-w-7xl mx-auto px-4 md:px-6">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {/* Stats Section - Responsive */}
+<section className="py-8 sm:py-12 lg:py-16 relative">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
       {[
         { 
           title: 'Incognito Shield', 
@@ -139,10 +138,10 @@ const HomePage = () => {
               ease: "easeOut" 
             }
           }}
-          className="glass-card p-8 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all"
+          className="glass-card p-4 sm:p-6 lg:p-8 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all"
         >
           <motion.div 
-            className="bg-dark-700/50 p-3 rounded-full mb-4 transition-all duration-300"
+            className="bg-dark-700/50 p-2 sm:p-3 rounded-full mb-3 sm:mb-4 transition-all duration-300"
             whileHover={{ 
               backgroundColor: "rgba(101, 75, 228, 0.15)",
               transition: { 
@@ -161,14 +160,14 @@ const HomePage = () => {
                 }
               }}
             >
-              <stat.icon className="w-8 h-8 text-primary-400" />
+              <stat.icon className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-primary-400" />
             </motion.div>
           </motion.div>
-          <h3 className="text-2xl font-bold text-white mb-3">{stat.title}</h3>
-          <p className="text-gray-400">{stat.description}</p>
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 sm:mb-3">{stat.title}</h3>
+          <p className="text-sm sm:text-base text-gray-400 leading-relaxed">{stat.description}</p>
           <motion.div 
             initial={{ width: 0 }}
-            className="h-0.5 bg-gradient-to-r from-secondary-400 to-primary-400 mt-4"
+            className="h-0.5 bg-gradient-to-r from-secondary-400 to-primary-400 mt-3 sm:mt-4"
             whileHover={{ 
               width: "80%", 
               transition: { 
@@ -183,25 +182,25 @@ const HomePage = () => {
   </div>
 </section>
 
-      {/* Features Section */}
-      <section id="learn-more" className="py-24 relative">
-  <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+      {/* Features Section - Responsive */}
+      <section id="learn-more" className="py-12 sm:py-16 lg:py-24 relative">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      className="text-center mb-16"
+      className="text-center mb-12 sm:mb-16"
     >
-      <h2 className="text-4xl font-bold mb-6 text-gradient">Powerful Features</h2>
+      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 text-gradient">Powerful Features</h2>
       <motion.div 
         initial={{ width: 0 }}
         whileInView={{ width: "100px" }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="h-1 bg-gradient-to-r from-primary-500 to-secondary-500 mx-auto mb-6"
+        className="h-1 bg-gradient-to-r from-primary-500 to-secondary-500 mx-auto mb-4 sm:mb-6"
       />
-      <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+      <p className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-xs sm:max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-0">
         Built on the blockchain, our platform offers cutting-edge security and anonymity features.
       </p>
     </motion.div>
@@ -211,7 +210,7 @@ const HomePage = () => {
       initial="hidden"
       whileInView="show"
       viewport={{ once: true }}
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
     >
       {[
         {
@@ -256,10 +255,10 @@ const HomePage = () => {
               ease: "easeOut" 
             }
           }}
-          className="glass-card p-8 rounded-xl h-full cursor-pointer transition-all"
+          className="glass-card p-4 sm:p-6 lg:p-8 rounded-xl h-full cursor-pointer transition-all"
         >
           <motion.div 
-            className="bg-dark-700/50 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6 transition-all duration-300"
+            className="bg-dark-700/50 p-2 sm:p-3 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-4 sm:mb-6 transition-all duration-300"
             whileHover={{ 
               backgroundColor: "rgba(101, 75, 228, 0.15)",
               transition: { 
@@ -278,14 +277,14 @@ const HomePage = () => {
                 }
               }}
             >
-              <feature.icon className="w-6 h-6 text-primary-400" />
+              <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-400" />
             </motion.div>
           </motion.div>
-          <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-          <p className="text-gray-400">{feature.description}</p>
+          <h3 className="text-lg sm:text-xl lg:text-xl font-bold text-white mb-2 sm:mb-3">{feature.title}</h3>
+          <p className="text-sm sm:text-base text-gray-400 leading-relaxed">{feature.description}</p>
           <motion.div 
             initial={{ width: 0 }}
-            className="h-0.5 bg-gradient-to-r from-secondary-400 to-primary-400 mt-4"
+            className="h-0.5 bg-gradient-to-r from-secondary-400 to-primary-400 mt-3 sm:mt-4"
             whileHover={{ 
               width: "80%", 
               transition: { 

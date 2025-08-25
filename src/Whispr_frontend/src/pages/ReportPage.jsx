@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import MapSelector from '../components/ui/MapSelector';
+import MapSelector from '../components/forms/MapSelector';
 import { submitReport } from '../api/whisprBackend';
 
 const ReportPage = () => {

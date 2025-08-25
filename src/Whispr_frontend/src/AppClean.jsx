@@ -4,8 +4,8 @@ import { AnimatePresence } from 'framer-motion';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import ReportPage from './pages/ReportPage';
-import DashboardPage from './pages/DashboardPage';
-import AuthorityPage from './pages/AuthorityPage';
+import DashboardPageClean from './pages/DashboardPageClean';
+import AuthorityPageClean from './pages/AuthorityPageClean';
 import ReportViewPage from './pages/ReportViewPage';
 import ChatPage from './pages/ChatPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -36,7 +36,7 @@ function App() {
               path="dashboard" 
               element={
                 <ProtectedRoute>
-                  <DashboardPage />
+                  <DashboardPageClean />
                 </ProtectedRoute>
               } 
             />
@@ -54,7 +54,7 @@ function App() {
               path="authority" 
               element={
                 <AuthorityProtectedRoute>
-                  <AuthorityPage />
+                  <AuthorityPageClean />
                 </AuthorityProtectedRoute>
               } 
             />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Check, MapPinned, Loader2 } from 'lucide-react';
-import Button from './Button';
+import Button from '../ui/Button';
 
 const MapSelector = ({ onLocationSelect, initialAddress = '', initialCoordinates = null }) => {
   const mapRef = useRef(null);

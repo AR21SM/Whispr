@@ -2,11 +2,11 @@ import React from 'react';
 import Navbar from '../layout/Navbar';
 import HeroSection from './HeroSection';
 import AnimatedBands from './AnimatedBands';
-import HowItWorks from '../ui/HowItWorks';
-import Features from '../ui/Features';
+import HowItWorks from '../../features/home/HowItWorks';
+import Features from '../../features/home/Features';
 import FeatureHighlights from './FeatureHighlights';
-import FAQ from '../ui/FAQ';
-import BackgroundEffects from '../ui/BackgroundEffects';
+import FAQ from '../../features/home/FAQ';
+import BackgroundEffects from '../three/BackgroundEffects';
 import useWalletConnect from '../wallet/WalletConnect';
 import Notification from '../ui/Notification';
 

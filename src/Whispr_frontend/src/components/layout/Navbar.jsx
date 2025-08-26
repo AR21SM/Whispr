@@ -12,7 +12,6 @@ const Navbar = () => {
   const [hoveredLink, setHoveredLink] = useState(null);
   const location = useLocation();
   
-  // Use the authority wallet connect hook to check if an authority wallet is connected
   const { isAuthorized } = useAuthorityWalletConnect();
 
   useEffect(() => {

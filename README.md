@@ -232,42 +232,6 @@ dfx deploy Whispr_frontend --network ic
 
 ---
 
-## API Reference
-
-### Public Methods
-
-**submit_report** accepts title, description, category, location, incident date, stake amount, and evidence count. Returns a Result containing the new report ID or an error message.
-
-**get_user_reports** takes no parameters and returns a vector of reports submitted by the calling principal.
-
-**get_report** accepts a report ID (u64) and returns the matching report if it exists and belongs to the caller.
-
-**is_authority** takes no parameters and returns a boolean indicating whether the caller is a registered authority.
-
-### Authority Methods
-
-**get_all_reports** returns all submitted reports in the system. Only callable by authorities.
-
-**verify_report** accepts a report ID and optional notes, marking the report as verified and distributing rewards.
-
-**reject_report** accepts a report ID and optional notes, marking the report as rejected and forfeiting staked tokens.
-
-**put_under_review** accepts a report ID and optional notes, flagging the report for additional investigation.
-
-**get_authority_statistics** returns dashboard statistics including total reports, verification rates, and processing metrics.
-
-**configure_ipfs_credentials** accepts Pinata API key, API secret, and JWT token for IPFS integration.
-
-**retrieve_report_from_ipfs** accepts a CID and returns the report data stored on IPFS.
-
-**retrieve_evidence_from_ipfs** accepts a CID and returns the evidence file data stored on IPFS.
-
-### Data Types
-
-The **Report** structure contains: id (u64), title (String), description (String), category (String), status (Pending, UnderReview, Verified, or Rejected), submitter_id (Principal), stake_amount (u64), reward_amount (u64), evidence_count (u32), location (optional), incident_date (optional String), ipfs_cid (optional String), ipfs_pinned_at (optional u64 timestamp), date_submitted (u64), and last_updated (u64).
-
----
-
 ## Screenshots
 
 ### Home Page

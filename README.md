@@ -491,25 +491,21 @@ Report
 ## Screenshots
 
 ### Home Page
-![Home](src/Whispr_frontend/src/assets/readme_images/home1.png)
+![Home](src/Whispr_frontend/src/assets/readme_images/home.png)
+![Home](src/Whispr_frontend/src/assets/readme_images/works.png)
 
 ### Report Submission
+![Report](src/Whispr_frontend/src/assets/readme_images/report.png)
 ![Report](src/Whispr_frontend/src/assets/readme_images/report1.png)
 
 ### Token Staking
 ![Staking](src/Whispr_frontend/src/assets/readme_images/token_staking1.png)
 
 ### User Dashboard
-![Dashboard](src/Whispr_frontend/src/assets/readme_images/dashboard1.png)
+![Dashboard](src/Whispr_frontend/src/assets/readme_images/userd.png)
 
 ### Authority Dashboard
-![Authority](src/Whispr_frontend/src/assets/readme_images/authority_dashboard1.png)
-
----
-
-## License
-
-MIT License - see LICENSE file for details.
+![Authority](src/Whispr_frontend/src/assets/readme_images/auth.png)
 
 ---
 

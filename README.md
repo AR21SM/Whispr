@@ -13,13 +13,11 @@ Whispr is a blockchain-powered platform for anonymous crime reporting built on t
 3. [Features](#features)
 4. [Technology Stack](#technology-stack)
 5. [IPFS Integration](#ipfs-integration)
-6. [Project Structure](#project-structure)
-7. [Getting Started](#getting-started)
-8. [Testing](#testing)
-9. [Deployment](#deployment)
-10. [API Reference](#api-reference)
-11. [Screenshots](#screenshots)
-12. [Contributing](#contributing)
+6. [Getting Started](#getting-started)
+7. [Testing](#testing)
+8. [Deployment](#deployment)
+9. [Screenshots](#screenshots)
+10. [Contributing](#contributing)
 
 ---
 

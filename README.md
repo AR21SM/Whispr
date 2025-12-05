@@ -503,7 +503,7 @@ Report
 ![Dashboard](src/Whispr_frontend/src/assets/readme_images/userd.png)
 
 ### Authority Dashboard
-![Authority](src/Whispr_frontend/src/assets/readme_images/auth.png)
+![Authority](src/Whispr_frontend/src/assets/readme_images/Auth.png)
 
 ---
 

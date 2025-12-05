@@ -1,8 +1,8 @@
 # Whispr
 
-## Decentralized Anonymous Crime Reporting Platform
+**Decentralized Anonymous Crime Reporting Platform**
 
-A blockchain-powered platform for anonymous crime reporting built on the Internet Computer Protocol (ICP). Whispr enables citizens to securely report crimes while maintaining complete anonymity through cryptographic identity protection.
+Whispr is a blockchain-powered platform for anonymous crime reporting built on the Internet Computer Protocol (ICP). It enables citizens to securely report crimes while maintaining complete anonymity through cryptographic identity protection.
 
 ---
 
@@ -12,40 +12,30 @@ A blockchain-powered platform for anonymous crime reporting built on the Interne
 2. [Architecture](#architecture)
 3. [Features](#features)
 4. [Technology Stack](#technology-stack)
-5. [Project Structure](#project-structure)
-6. [Getting Started](#getting-started)
-7. [Testing](#testing)
-8. [Deployment](#deployment)
-9. [API Reference](#api-reference)
-10. [Screenshots](#screenshots)
+5. [IPFS Integration](#ipfs-integration)
+6. [Project Structure](#project-structure)
+7. [Getting Started](#getting-started)
+8. [Testing](#testing)
+9. [Deployment](#deployment)
+10. [API Reference](#api-reference)
+11. [Screenshots](#screenshots)
+12. [Contributing](#contributing)
 
 ---
 
 ## Overview
 
-Whispr addresses the critical challenge of anonymous crime reporting by leveraging blockchain technology. Traditional reporting systems often fail to protect informer identities, leading to reluctance in reporting criminal activities. Whispr solves this by:
+Traditional crime reporting systems often fail to protect informer identities, creating fear of retaliation and discouraging citizens from reporting criminal activities. Whispr addresses this critical challenge by leveraging blockchain technology to create a trustless, anonymous reporting environment.
 
-- Generating cryptographic identities that cannot be traced back to users
-- Storing all data on decentralized infrastructure
-- Implementing a token staking mechanism to ensure report authenticity
-- Providing rewards for verified reports
+The platform generates cryptographic identities that cannot be traced back to users, stores all data on decentralized infrastructure, implements a token staking mechanism to ensure report authenticity, and provides rewards for verified reports.
 
-### Problem Statement
+### The Problem
 
-```
-+-------------------------------------------------------------------------+
-|                     Traditional Crime Reporting                          |
-+-------------------------------------------------------------------------+
-|  [Citizen] ---> [Report] ---> [Authority Database]                      |
-|      |                              |                                    |
-|      +-- Identity Exposed <---------+                                    |
-|                 |                                                        |
-|                 v                                                        |
-|          Risk of Retaliation                                             |
-+-------------------------------------------------------------------------+
-```
+In conventional systems, when a citizen submits a report, their identity is stored in a centralized database controlled by authorities. This creates a direct link between the informer and their report, exposing them to potential retaliation from criminal elements.
 
-### Whispr Solution
+### The Solution
+
+Whispr eliminates this vulnerability by generating an Ed25519 cryptographic identity for each user session. Reports are submitted through this anonymous identity and stored immutably on the Internet Computer blockchain. Authorities can access and verify reports without ever knowing the true identity of the informer.
 
 ```
 +-------------------------------------------------------------------------+
@@ -67,8 +57,6 @@ Whispr addresses the critical challenge of anonymous crime reporting by leveragi
 
 ## Architecture
 
-### System Architecture
-
 ```
 +----------------------------------------------------------------------------+
 |                              WHISPR SYSTEM                                  |
@@ -84,7 +72,6 @@ Whispr addresses the critical challenge of anonymous crime reporting by leveragi
 |   |  - Report Form   |         |  - Evidence Mgmt |                        |
 |   +------------------+         +------------------+                        |
 |           |                            |                                   |
-|           |                            |                                   |
 |           v                            v                                   |
 |   +------------------------------------------------------------------+    |
 |   |              INTERNET COMPUTER BLOCKCHAIN                         |    |
@@ -92,125 +79,22 @@ Whispr addresses the critical challenge of anonymous crime reporting by leveragi
 |   |   +-------------+  +-------------+  +-------------+              |    |
 |   |   |  Frontend   |  |  Backend    |  |  Stable     |              |    |
 |   |   |  Canister   |  |  Canister   |  |  Memory     |              |    |
-|   |   |             |  |             |  |             |              |    |
-|   |   | aoicy-vyaaa |  | bdggw-2qaaa |  |  Reports    |              |    |
-|   |   | -aaaag-aua4a|  | -aaaag-aua3q|  |  Users      |              |    |
-|   |   | -cai        |  | -cai        |  |  Evidence   |              |    |
 |   |   +-------------+  +-------------+  +-------------+              |    |
 |   +------------------------------------------------------------------+    |
-|                                                                            |
 +----------------------------------------------------------------------------+
 ```
 
-### Data Flow: Report Submission
+### Report Submission Flow
 
-```
-+-----------------------------------------------------------------------------+
-|                           REPORT SUBMISSION FLOW                             |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|   USER                     FRONTEND                    BACKEND               |
-|    |                          |                           |                  |
-|    |  1. Create Report        |                           |                  |
-|    |------------------------->|                           |                  |
-|    |                          |                           |                  |
-|    |  2. Generate Identity    |                           |                  |
-|    |<-------------------------|                           |                  |
-|    |  (Ed25519 KeyPair)       |                           |                  |
-|    |                          |                           |                  |
-|    |  3. Stake Tokens         |                           |                  |
-|    |------------------------->|                           |                  |
-|    |                          |                           |                  |
-|    |                          |  4. Submit Report         |                  |
-|    |                          |-------------------------->|                  |
-|    |                          |  (Candid Interface)       |                  |
-|    |                          |                           |                  |
-|    |                          |  5. Store in Stable       |                  |
-|    |                          |     Memory                |                  |
-|    |                          |                           |                  |
-|    |                          |  6. Return Report ID      |                  |
-|    |                          |<--------------------------|                  |
-|    |                          |                           |                  |
-|    |  7. Confirmation         |                           |                  |
-|    |<-------------------------|                           |                  |
-|    |                          |                           |                  |
-+-----------------------------------------------------------------------------+
-```
+When a user creates a report, the frontend first generates an Ed25519 cryptographic identity unique to their browser session. The user then stakes tokens as a commitment to the report's authenticity. The report is submitted to the backend canister through the Candid interface, where it is stored in stable memory and simultaneously pinned to IPFS via Pinata. The backend returns a unique report ID, and the user receives confirmation of successful submission.
 
-### Data Flow: Authority Verification
+### Authority Verification Flow
 
-```
-+-----------------------------------------------------------------------------+
-|                        AUTHORITY VERIFICATION FLOW                           |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|   AUTHORITY                FRONTEND                    BACKEND               |
-|       |                       |                           |                  |
-|       |  1. Connect Plug      |                           |                  |
-|       |      Wallet           |                           |                  |
-|       |---------------------->|                           |                  |
-|       |                       |                           |                  |
-|       |                       |  2. Verify Principal      |                  |
-|       |                       |-------------------------->|                  |
-|       |                       |                           |                  |
-|       |                       |  3. Return is_authority   |                  |
-|       |                       |<--------------------------|                  |
-|       |                       |                           |                  |
-|       |  4. Load Dashboard    |                           |                  |
-|       |<----------------------|                           |                  |
-|       |                       |                           |                  |
-|       |  5. Review Report     |                           |                  |
-|       |---------------------->|                           |                  |
-|       |                       |                           |                  |
-|       |                       |  6. verify_report()       |                  |
-|       |                       |-------------------------->|                  |
-|       |                       |                           |                  |
-|       |                       |  7. Distribute Reward     |                  |
-|       |                       |     to Informer           |                  |
-|       |                       |<--------------------------|                  |
-|       |                       |                           |                  |
-+-----------------------------------------------------------------------------+
-```
+Authorities access the system by connecting their Plug wallet, which provides their ICP principal for authentication. The backend verifies that the principal belongs to a registered authority before granting access to the dashboard. From there, authorities can review reports, verify or reject them, and communicate anonymously with informers. When a report is verified, the staked tokens are multiplied and distributed back to the informer as a reward.
 
 ### Token Reward System
 
-```
-+-----------------------------------------------------------------------------+
-|                           TOKEN REWARD SYSTEM                                |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|   REPORT SUBMITTED                                                           |
-|         |                                                                    |
-|         v                                                                    |
-|   +-------------+                                                            |
-|   | User Stakes |                                                            |
-|   | X Tokens    |                                                            |
-|   +-------------+                                                            |
-|         |                                                                    |
-|         v                                                                    |
-|   +------------------+                                                       |
-|   | Authority Review |                                                       |
-|   +------------------+                                                       |
-|         |                                                                    |
-|         +------------------+------------------+                              |
-|         |                  |                  |                              |
-|         v                  v                  v                              |
-|   +-----------+      +-----------+      +-----------+                        |
-|   | VERIFIED  |      | REJECTED  |      | PENDING   |                        |
-|   +-----------+      +-----------+      +-----------+                        |
-|         |                  |                  |                              |
-|         v                  v                  |                              |
-|   +-------------+    +-------------+          |                              |
-|   | User Gets   |    | Stake Lost  |          |                              |
-|   | X * 10      |    |             |          |                              |
-|   | Tokens      |    |             |          |                              |
-|   +-------------+    +-------------+          |                              |
-|                                               |                              |
-|                                               v                              |
-|                                         Awaiting Review                      |
-|                                                                              |
-+-----------------------------------------------------------------------------+
-```
+The token staking mechanism serves dual purposes: it discourages false reports by requiring users to put tokens at risk, and it rewards genuine informers when their reports are verified. Users stake X tokens when submitting a report. If the report is verified by authorities, the user receives X multiplied by 10 tokens as a reward. If the report is rejected as fraudulent, the staked tokens are forfeited. Reports pending review maintain their staked tokens until a decision is made.
 
 ---
 
@@ -218,34 +102,15 @@ Whispr addresses the critical challenge of anonymous crime reporting by leveragi
 
 ### For Informers
 
-| Feature | Description |
-|---------|-------------|
-| Anonymous Identity | Ed25519 cryptographic identity generated per browser session |
-| Multi-Category Reporting | Support for 15+ crime categories including fraud, violence, corruption |
-| Evidence Upload | Attach images, videos, and documents to reports |
-| Token Staking | Stake tokens to validate report authenticity |
-| Reward System | Earn up to 10x staked tokens for verified reports |
-| Report Tracking | Monitor report status through personal dashboard |
+Whispr provides informers with comprehensive tools for anonymous crime reporting. Each browser session generates a unique Ed25519 cryptographic identity that cannot be traced back to the user. The platform supports over 15 crime categories including fraud, violence, corruption, cybercrime, and more. Users can attach images, videos, and documents as evidence, all of which are encrypted before storage. The token staking system ensures report authenticity while providing the opportunity to earn up to 10x the staked amount for verified reports. A personal dashboard allows users to track the status of their submitted reports in real-time.
 
 ### For Authorities
 
-| Feature | Description |
-|---------|-------------|
-| Secure Dashboard | Plug wallet authentication with principal verification |
-| Report Management | View, filter, and sort all submitted reports |
-| Verification Tools | Approve, reject, or mark reports for review |
-| Anonymous Messaging | Communicate with informers without identity exposure |
-| Bulk Operations | Process multiple reports simultaneously |
-| Statistics | Real-time analytics on report processing |
+The authority dashboard provides secure access through Plug wallet authentication with principal verification. Authorities can view, filter, and sort all submitted reports by category, status, date, or other criteria. Verification tools allow them to approve reports as verified, reject false reports, or mark reports for further review. An anonymous messaging system enables communication with informers without exposing identities. Bulk operations support processing multiple reports simultaneously, and real-time statistics provide analytics on report processing and verification rates.
 
-### Security Features
+### Security
 
-| Feature | Description |
-|---------|-------------|
-| Blockchain Storage | All data stored on ICP stable memory |
-| Identity Protection | Principal-based authentication without personal data |
-| Role-Based Access | Strict separation between user and authority functions |
-| Immutable Records | Tamper-proof evidence and report logs |
+All data is stored on ICP stable memory, providing blockchain-level security and immutability. Reports and evidence are additionally pinned to IPFS via Pinata for decentralized backup. Principal-based authentication eliminates the need for personal data collection. Role-based access control strictly separates user and authority functions. All evidence and report logs are tamper-proof and permanently recorded on the blockchain.
 
 ---
 
@@ -253,82 +118,21 @@ Whispr addresses the critical challenge of anonymous crime reporting by leveragi
 
 ### Frontend
 
-| Technology | Purpose |
-|------------|---------|
-| React 18 | UI framework |
-| Vite | Build tool and dev server |
-| Tailwind CSS | Styling |
-| @dfinity/agent | ICP blockchain communication |
-| @dfinity/identity | Cryptographic identity management |
-| Framer Motion | Animations |
-| Jest | Testing framework |
+The frontend is built with **React 18** as the UI framework, using **Vite** for fast development builds and hot module replacement. Styling is handled through **Tailwind CSS** for utility-first responsive design. Communication with the ICP blockchain is managed through **@dfinity/agent**, while **@dfinity/identity** handles cryptographic identity generation and management. **Framer Motion** provides smooth animations throughout the interface. The test suite is built on **Jest** with React Testing Library.
 
 ### Backend
 
-| Technology | Purpose |
-|------------|---------|
-| Rust | Canister programming language |
-| ic-cdk | Internet Computer SDK |
-| ic-stable-structures | Persistent storage |
-| Candid | Interface definition language |
-| Serde | Serialization/deserialization |
+The backend canister is written in **Rust** for performance and safety guarantees. **ic-cdk** provides the Internet Computer SDK for canister development. Persistent storage uses **ic-stable-structures** with StableBTreeMap for data that survives upgrades. The **Candid** interface definition language enables type-safe communication between frontend and backend. **Serde** handles serialization and deserialization of data structures for both storage and IPFS integration.
 
-### Infrastructure
+## IPFS Integration
 
-| Component | Details |
-|-----------|---------|
-| Blockchain | Internet Computer Protocol (ICP) |
-| Frontend Canister | aoicy-vyaaa-aaaag-aua4a-cai |
-| Backend Canister | bdggw-2qaaa-aaaag-aua3q-cai |
-| Storage | StableBTreeMap (on-chain) |
+Whispr uses IPFS via Pinata for decentralized, immutable storage of reports and evidence. This provides an additional layer of data permanence beyond the ICP blockchain.
 
----
+When a report is submitted, it is first stored in the canister's stable memory. The backend then creates a JSON snapshot of the report containing the report ID, title, description, category, stake amount, evidence count, location, incident date, status, submission timestamp, and a SHA-256 hash of the submitter's principal (protecting their identity while maintaining accountability). This snapshot is pinned to IPFS through Pinata's API, which returns a Content Identifier (CID). The CID is stored alongside the report record for future retrieval.
 
-## Project Structure
+Evidence files follow a similar process. Each file is base64-encoded and wrapped in a JSON structure containing the report ID, file name, file type, upload timestamp, and the encoded data. This is pinned separately to IPFS, with the resulting CID stored in the evidence record.
 
-```
-Whispr/
-|
-|-- dfx.json                    # DFX configuration
-|-- canister_ids.json           # Deployed canister IDs
-|-- Cargo.toml                  # Rust workspace configuration
-|-- package.json                # Root package configuration
-|
-|-- src/
-|   |-- Whispr_backend/         # Rust backend canister
-|   |   |-- Cargo.toml
-|   |   |-- Whispr_backend.did  # Candid interface
-|   |   |-- src/
-|   |       |-- lib.rs          # Main canister entry points
-|   |       |-- authority/
-|   |           |-- mod.rs
-|   |           |-- handlers.rs # Business logic
-|   |           |-- store.rs    # Storage operations
-|   |           |-- types.rs    # Data structures
-|   |
-|   |-- Whispr_frontend/        # React frontend
-|   |   |-- package.json
-|   |   |-- vite.config.js
-|   |   |-- jest.config.js
-|   |   |-- tailwind.config.js
-|   |   |-- src/
-|   |       |-- api/            # Backend API integration
-|   |       |-- components/     # Reusable UI components
-|   |       |-- context/        # React context providers
-|   |       |-- hooks/          # Custom React hooks
-|   |       |-- pages/          # Page components
-|   |       |-- services/       # Business logic services
-|   |       |-- utils/          # Utility functions
-|   |       |-- constants/      # Application constants
-|   |       |-- __tests__/      # Jest test files
-|   |
-|   |-- declarations/           # Auto-generated Candid bindings
-|       |-- Whispr_backend/
-|           |-- index.js
-|           |-- Whispr_backend.did.js
-|
-|-- target/                     # Rust build output
-```
+Only authorities can retrieve data from IPFS through the backend canister. This ensures that even though the data is stored on a public network, access is controlled and auditable.
 
 ---
 
@@ -336,22 +140,18 @@ Whispr/
 
 ### Prerequisites
 
-| Requirement | Version |
-|-------------|---------|
-| Node.js | 18.x or higher |
-| DFX SDK | 0.15.x or higher |
-| Rust | 1.70 or higher |
+Before starting, ensure you have **Node.js** version 18.x or higher, **DFX SDK** version 0.15.x or higher, and **Rust** version 1.70 or higher installed on your system.
 
 ### Installation
 
-1. Clone the repository
+Clone the repository and navigate to the project directory:
 
 ```bash
 git clone https://github.com/AR21SM/Whispr.git
 cd Whispr
 ```
 
-2. Install dependencies
+Install the frontend dependencies:
 
 ```bash
 cd src/Whispr_frontend
@@ -359,63 +159,49 @@ npm install
 cd ../..
 ```
 
-3. Start local development
+### Local Development
+
+Start the local ICP replica in the background:
 
 ```bash
-# Start the local ICP replica
 dfx start --background
+```
 
-# Deploy canisters locally
+Deploy the canisters to the local replica:
+
+```bash
 dfx deploy
+```
 
-# Start frontend development server
+Start the frontend development server:
+
+```bash
 cd src/Whispr_frontend
 npm run start
 ```
 
-4. Access the application
-
-```
-Local Frontend:  http://localhost:3000
-Local Candid UI: http://localhost:4943/?canisterId=<backend-canister-id>
-```
+Access the application at `http://localhost:3000`. The Candid UI for direct backend interaction is available at `http://localhost:4943`.
 
 ---
 
 ## Testing
 
-### Test Setup
-
-The project uses Jest with React Testing Library for frontend testing.
+The project uses Jest with React Testing Library for comprehensive frontend testing.
 
 ### Running Tests
 
+Navigate to the frontend directory and run the test suite:
+
 ```bash
 cd src/Whispr_frontend
-
-# Run all tests
 npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Generate coverage report
-npm run test:coverage
-
-# Verbose output
-npm run test:verbose
 ```
+
+Additional test commands are available: `npm run test:watch` runs tests in watch mode for development, `npm run test:coverage` generates a coverage report, and `npm run test:verbose` provides detailed test output.
 
 ### Test Coverage
 
-| Module | Tests | Description |
-|--------|-------|-------------|
-| utils/helpers | 32 | Date formatting, text truncation, validation, debounce |
-| utils/storage | 19 | LocalStorage operations, report storage |
-| constants | 23 | Report categories, statuses, configuration |
-| services/reportService | 18 | Report submission, fetching, filtering |
-| hooks/useFilters | 26 | Data filtering, sorting, search |
-| **Total** | **118** | All tests passing |
+The test suite includes **118 tests** across 5 modules. The **utils/helpers** module contains 32 tests covering date formatting, text truncation, validation, and debounce utilities. The **utils/storage** module has 19 tests for LocalStorage operations and report storage functions. The **constants** module includes 23 tests for report categories, statuses, and configuration values. The **services/reportService** module contains 18 tests for report submission, fetching, and filtering logic. The **hooks/useFilters** module has 26 tests for data filtering, sorting, and search functionality. All tests are currently passing.
 
 ---
 
@@ -423,22 +209,25 @@ npm run test:verbose
 
 ### Deploy to IC Mainnet
 
-```bash
-# Set your identity
-dfx identity use <your-identity>
+Set your dfx identity and deploy to the mainnet:
 
-# Deploy to mainnet
+```bash
+dfx identity use <your-identity>
 dfx deploy --network ic
 ```
 
 ### Canister Management
 
+Check the status of deployed canisters:
+
 ```bash
-# Check canister status
 dfx canister status Whispr_backend --network ic
 dfx canister status Whispr_frontend --network ic
+```
 
-# Upgrade canisters
+Upgrade canisters with new code:
+
+```bash
 dfx deploy Whispr_backend --network ic
 dfx deploy Whispr_frontend --network ic
 ```
@@ -447,42 +236,37 @@ dfx deploy Whispr_frontend --network ic
 
 ## API Reference
 
-### Backend Canister Methods
+### Public Methods
 
-#### Public Methods
+**submit_report** accepts title, description, category, location, incident date, stake amount, and evidence count. Returns a Result containing the new report ID or an error message.
 
-| Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
-| submit_report | title, description, category, location, incident_date, stake_amount, evidence_count | Result | Submit a new report |
-| get_user_reports | - | Vec | Get reports for current user |
-| get_report | report_id: u64 | Vec | Get specific report |
-| is_authority | - | bool | Check if caller is authority |
+**get_user_reports** takes no parameters and returns a vector of reports submitted by the calling principal.
 
-#### Authority Methods
+**get_report** accepts a report ID (u64) and returns the matching report if it exists and belongs to the caller.
 
-| Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
-| get_all_reports | - | Result | Get all submitted reports |
-| verify_report | report_id, notes | Result | Mark report as verified |
-| reject_report | report_id, notes | Result | Reject a report |
-| put_under_review | report_id, notes | Result | Mark for further review |
-| get_authority_statistics | - | Result | Get dashboard statistics |
+**is_authority** takes no parameters and returns a boolean indicating whether the caller is a registered authority.
+
+### Authority Methods
+
+**get_all_reports** returns all submitted reports in the system. Only callable by authorities.
+
+**verify_report** accepts a report ID and optional notes, marking the report as verified and distributing rewards.
+
+**reject_report** accepts a report ID and optional notes, marking the report as rejected and forfeiting staked tokens.
+
+**put_under_review** accepts a report ID and optional notes, flagging the report for additional investigation.
+
+**get_authority_statistics** returns dashboard statistics including total reports, verification rates, and processing metrics.
+
+**configure_ipfs_credentials** accepts Pinata API key, API secret, and JWT token for IPFS integration.
+
+**retrieve_report_from_ipfs** accepts a CID and returns the report data stored on IPFS.
+
+**retrieve_evidence_from_ipfs** accepts a CID and returns the evidence file data stored on IPFS.
 
 ### Data Types
 
-```
-Report
-  - id: u64
-  - title: String
-  - description: String
-  - category: String
-  - status: ReportStatus (Pending | UnderReview | Verified | Rejected)
-  - submitter_id: Principal
-  - stake_amount: u64
-  - evidence_count: u32
-  - created_at: u64
-  - updated_at: u64
-```
+The **Report** structure contains: id (u64), title (String), description (String), category (String), status (Pending, UnderReview, Verified, or Rejected), submitter_id (Principal), stake_amount (u64), reward_amount (u64), evidence_count (u32), location (optional), incident_date (optional String), ipfs_cid (optional String), ipfs_pinned_at (optional u64 timestamp), date_submitted (u64), and last_updated (u64).
 
 ---
 
@@ -490,33 +274,26 @@ Report
 
 ### Home Page
 ![Home](src/Whispr_frontend/src/assets/readme_images/Home.png)
-![Home](src/Whispr_frontend/src/assets/readme_images/works.png)
+![How It Works](src/Whispr_frontend/src/assets/readme_images/works.png)
 
 ### Report Submission
-![Report](src/Whispr_frontend/src/assets/readme_images/report.png)
-![Report](src/Whispr_frontend/src/assets/readme_images/report1.png)
+![Report Form](src/Whispr_frontend/src/assets/readme_images/report.png)
+![Report Details](src/Whispr_frontend/src/assets/readme_images/report1.png)
 
 ### Token Staking
-![Staking](src/Whispr_frontend/src/assets/readme_images/token_staking1.png)
+![Token Staking](src/Whispr_frontend/src/assets/readme_images/token_staking1.png)
 
 ### User Dashboard
-![Dashboard](src/Whispr_frontend/src/assets/readme_images/userd.png)
+![User Dashboard](src/Whispr_frontend/src/assets/readme_images/userd.png)
 
 ### Authority Dashboard
-![Authority](src/Whispr_frontend/src/assets/readme_images/Auth.png)
-![Authority](src/Whispr_frontend/src/assets/readme_images/auth2.png)
+![Authority Dashboard](src/Whispr_frontend/src/assets/readme_images/Auth.png)
+![Authority Report View](src/Whispr_frontend/src/assets/readme_images/auth2.png)
 
 ---
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/improvement`
-3. Commit changes: `git commit -am 'Add new feature'`
-4. Push to branch: `git push origin feature/improvement`
-5. Open a Pull Request
+Contributions are welcome. To contribute, fork the repository, create a feature branch (`git checkout -b feature/improvement`), commit your changes (`git commit -am 'Add new feature'`), push to the branch (`git push origin feature/improvement`), and open a Pull Request. Please ensure all tests pass before submitting.
 
 ---
-
-Built on the Internet Computer
-

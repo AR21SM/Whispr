@@ -24,7 +24,7 @@ node_modules/
 dist/
 .svelte-kit/
 
-# environment variables - IMPORTANT: Never commit API keys
+# Environment variables
 .env
 .env.local
 .env.*.local
@@ -55,6 +55,6 @@ ehthumbs.db
 *.temp
 .cache/
 
-# Package manager locks (optional - some projects keep these)
+# Dependency lock files
 # package-lock.json
 # yarn.lock

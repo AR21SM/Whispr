@@ -4,8 +4,6 @@
 
 A blockchain-powered platform for anonymous crime reporting built on the Internet Computer Protocol (ICP). Whispr enables citizens to securely report crimes while maintaining complete anonymity through cryptographic identity protection.
 
-**Live Application:** https://aoicy-vyaaa-aaaag-aua4a-cai.icp0.io/
-
 ---
 
 ## Table of Contents
@@ -491,7 +489,7 @@ Report
 ## Screenshots
 
 ### Home Page
-![Home](src/Whispr_frontend/src/assets/readme_images/home.png)
+![Home](src/Whispr_frontend/src/assets/readme_images/Home.png)
 ![Home](src/Whispr_frontend/src/assets/readme_images/works.png)
 
 ### Report Submission

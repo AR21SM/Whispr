@@ -504,6 +504,7 @@ Report
 
 ### Authority Dashboard
 ![Authority](src/Whispr_frontend/src/assets/readme_images/Auth.png)
+![Authority](src/Whispr_frontend/src/assets/readme_images/auth2.png)
 
 ---
 

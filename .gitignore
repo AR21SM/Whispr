@@ -2,6 +2,8 @@
 .vscode/
 .idea/
 **/*~
+*.swp
+*.swo
 
 # Mac OSX temporary files
 .DS_Store
@@ -15,6 +17,7 @@
 
 # rust
 target/
+Cargo.lock
 
 # frontend code
 node_modules/
@@ -32,6 +35,26 @@ dist/
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Build artifacts
-Cargo.lock
+build/
+*.wasm
+
+# Testing
+coverage/
+.nyc_output/
+
+# OS files
+Thumbs.db
+ehthumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Package manager locks (optional - some projects keep these)
+# package-lock.json
+# yarn.lock

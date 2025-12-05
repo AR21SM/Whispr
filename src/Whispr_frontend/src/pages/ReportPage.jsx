@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Upload, FilePlus, Camera, AlertTriangle, Info, X, Plus, ChevronRight, Check,
-  Map, Clock, MapPin
+  Map, Clock, MapPin, Sparkles, Loader2
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import MapSelector from '../components/forms/MapSelector';
 import { submitReport } from '../api/whisprBackend';
+import { enhanceReport } from '../services/aiService';
+import Background3D from '../components/three/Background3D';
 
 const ReportPage = () => {
   const navigate = useNavigate();
@@ -26,6 +28,11 @@ const ReportPage = () => {
     stakeAmount: 10
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // AI Enhancement states
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhanceResult, setEnhanceResult] = useState(null);
+  const [showEnhancements, setShowEnhancements] = useState(false);
 
   // Add this useEffect to scroll to top when step changes
   useEffect(() => {
@@ -48,6 +55,41 @@ const ReportPage = () => {
       ...prev,
       location: locationData
     }));
+  };
+
+  // AI Enhancement handler
+  const handleEnhanceWithAI = async () => {
+    if (!reportData.title.trim() && !reportData.description.trim()) {
+      alert('Please enter a title or description first');
+      return;
+    }
+
+    setIsEnhancing(true);
+    setEnhanceResult(null);
+    setShowEnhancements(false);
+
+    try {
+      const result = await enhanceReport(
+        reportData.title,
+        reportData.description,
+        reportData.category
+      );
+
+      setEnhanceResult(result);
+      setShowEnhancements(true);
+
+      // Auto-apply enhanced title and description
+      setReportData((prev) => ({
+        ...prev,
+        title: result.enhancedTitle || prev.title,
+        description: result.enhancedDescription || prev.description
+      }));
+    } catch (error) {
+      console.error('AI enhancement error:', error);
+      alert('Failed to enhance report. Please try again.');
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -287,6 +329,53 @@ const ReportPage = () => {
           placeholder="Provide detailed information about the incident"
           required
         />
+        
+        {/* AI Enhance Button */}
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handleEnhanceWithAI}
+            disabled={isEnhancing || (!reportData.title.trim() && !reportData.description.trim())}
+            className={`group relative w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold tracking-wide transition-all duration-500 ease-out overflow-hidden ${
+              isEnhancing
+                ? 'bg-[#6728ff]/50 cursor-wait opacity-80'
+                : (!reportData.title.trim() && !reportData.description.trim())
+                  ? 'bg-gray-800/50 cursor-not-allowed text-gray-600 border border-gray-700/50'
+                  : 'bg-gradient-to-r from-[#6728ff] to-[#148cff] hover:from-[#5614ef] hover:to-[#0078ef] shadow-xl shadow-[#6728ff]/20 hover:shadow-[#6728ff]/40 hover:scale-[1.02] active:scale-[0.98] border border-white/10'
+            }`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+            {isEnhancing ? (
+              <>
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+                <span className="text-white font-semibold">Enhancing...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5 text-white group-hover:rotate-12 transition-transform duration-500" />
+                <span className="text-white font-semibold">Enhance with AI</span>
+              </>
+            )}
+          </button>
+
+          {/* Show improvements made */}
+          {showEnhancements && enhanceResult && enhanceResult.improvements && enhanceResult.improvements.length > 0 && (
+            <div className="mt-3 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Check className="w-4 h-4 text-green-400" />
+                <span className="text-green-400 text-sm font-medium">Enhanced!</span>
+              </div>
+              <ul className="space-y-1">
+                {enhanceResult.improvements.map((improvement, idx) => (
+                  <li key={idx} className="text-xs text-green-300/80 flex items-center gap-1.5">
+                    <span className="text-green-500">•</span>
+                    {improvement}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
       <div>
@@ -701,24 +790,32 @@ const ReportPage = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">Report Illegal Activity</h1>
-        <p className="text-gray-400">
-          Your identity remains anonymous through blockchain technology
-        </p>
+    <div className="relative min-h-screen">
+      {/* 3D Star Background */}
+      <div className="fixed inset-0 z-0">
+        <Background3D />
       </div>
+      
+      {/* Content */}
+      <div className="relative z-10 max-w-2xl mx-auto py-8 px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Report Illegal Activity</h1>
+          <p className="text-gray-400">
+            Your identity remains anonymous through blockchain technology
+          </p>
+        </div>
 
-      {currentStep !== 'confirmation' && renderStepIndicator()}
+        {currentStep !== 'confirmation' && renderStepIndicator()}
 
-      <Card>
-        <Card.Content>
-          <form>
-            {renderCurrentStep()}
-            {renderStepButtons()}
-          </form>
-        </Card.Content>
-      </Card>
+        <Card>
+          <Card.Content>
+            <form>
+              {renderCurrentStep()}
+              {renderStepButtons()}
+            </form>
+          </Card.Content>
+        </Card>
+      </div>
     </div>
   );
 };

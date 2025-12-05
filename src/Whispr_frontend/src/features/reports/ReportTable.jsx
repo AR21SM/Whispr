@@ -137,7 +137,12 @@ const ReportTable = ({
                   </td>
                   <td className="px-4 py-4 text-sm">{formatDate(report.date)}</td>
                   <td className="px-4 py-4 text-sm">{report.evidenceCount || 0} files</td>
-                  <td className="px-4 py-4 text-sm text-purple-400">{report.stakeAmount || 0} tokens</td>
+                  <td className="px-4 py-4 text-sm">
+                    <span className="text-purple-400">{report.stakeAmount || 0} tokens</span>
+                    {report.status === 'verified' && report.rewardAmount > 0 && (
+                      <span className="text-green-400 ml-2">(+{report.rewardAmount} reward)</span>
+                    )}
+                  </td>
                   <td className="px-4 py-4">
                     <StatusBadge status={report.status} />
                   </td>

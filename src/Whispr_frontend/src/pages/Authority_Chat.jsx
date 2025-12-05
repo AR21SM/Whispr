@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { useWeb3 } from '../contexts/Web3Context';
+import { useWeb3 } from '../context/Web3Context';
 
 const AuthorityChatPage = () => {
   const { reportId } = useParams();

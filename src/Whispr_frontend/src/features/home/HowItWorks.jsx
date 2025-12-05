@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Upload, Lock, MessageSquare } from 'lucide-react';
+import { Shield, Upload, Lock, MessageSquare, ArrowRight } from 'lucide-react';
 
 const HowItWorks = () => {
   const steps = [
@@ -9,148 +9,97 @@ const HowItWorks = () => {
       title: 'Connect & Verify',
       description: 'Connect your wallet anonymously through zero-knowledge proofs',
       icon: Shield,
-      color: 'bg-primary-500'
+      color: 'from-blue-500 to-cyan-500'
     },
     {
       id: 2,
       title: 'Submit Evidence',
       description: 'Upload encrypted evidence securely to the blockchain',
       icon: Upload,
-      color: 'bg-secondary-500'
+      color: 'from-purple-500 to-pink-500'
     },
     {
       id: 3,
       title: 'Stake Tokens',
       description: 'Stake tokens to validate your report\'s authenticity',
       icon: Lock,
-      color: 'bg-primary-400'
+      color: 'from-orange-500 to-red-500'
     },
     {
       id: 4,
       title: 'Authority Review',
       description: 'Verified authorities review while maintaining your anonymity',
       icon: MessageSquare,
-      color: 'bg-secondary-400'
+      color: 'from-green-500 to-emerald-500'
     }
   ];
 
   return (
-    <section className="py-12 sm:py-16 lg:py-24 relative">
-      <div className="absolute inset-0 bg-dark-800/30" />
+    <section className="py-24 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-64 w-96 h-96 bg-primary-500/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-1/4 -right-64 w-96 h-96 bg-secondary-500/10 rounded-full blur-[100px]" />
+      </div>
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-12 sm:mb-16"
+          className="text-center mb-20"
         >
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 text-white">How It Works</h2>
-          <motion.div 
-            initial={{ width: 0 }}
-            whileInView={{ width: "100px" }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="h-1 bg-gradient-to-r from-primary-500 to-secondary-500 mx-auto mb-4 sm:mb-6"
-          />
-          <p className="text-base sm:text-lg lg:text-xl text-gray-300 max-w-2xl mx-auto px-4 sm:px-0">
-            Four simple steps to anonymously report and get rewarded
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+              How It Works
+            </span>
+          </h2>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            A simple, secure, and anonymous process to report crimes and earn rewards.
           </p>
         </motion.div>
 
         <div className="relative">
-          {/* Vertical line connecting steps - hidden on mobile */}
-          <div className="hidden lg:block absolute left-1/2 top-10 bottom-10 w-px bg-gradient-to-b from-primary-500 via-secondary-500 to-primary-500 transform -translate-x-1/2"></div>
-          
-          <div className="space-y-8 sm:space-y-12 lg:space-y-0">
+          {/* Connecting Line (Desktop) */}
+          <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-gray-700 to-transparent -translate-y-1/2 z-0" />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
             {steps.map((step, index) => (
               <motion.div
                 key={step.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className={`flex flex-col ${index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center`}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.2, duration: 0.5 }}
+                className="relative group"
               >
-                <div className={`flex-1 ${index % 2 === 0 ? 'lg:text-right lg:pr-16' : 'lg:text-left lg:pl-16'} pb-6 sm:pb-8 lg:pb-0 text-center lg:text-left`}>
-                  <motion.div 
-                    whileHover={{ 
-                      scale: 1.03,
-                      boxShadow: "0 0 15px 2px rgba(101, 75, 228, 0.2)",
-                      transition: { 
-                        duration: 0.4, 
-                        ease: "easeOut" 
-                      }
-                    }}
-                    className={`glass-card p-4 sm:p-6 lg:p-8 rounded-xl inline-block max-w-xs sm:max-w-sm lg:max-w-md transition-all cursor-pointer`}
-                  >
-                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 sm:mb-3 lg:mb-4">{step.title}</h3>
-                    <p className="text-sm sm:text-base text-gray-300 leading-relaxed">{step.description}</p>
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      className="h-0.5 bg-gradient-to-r from-secondary-400 to-primary-400 mt-3 sm:mt-4"
-                      whileHover={{ 
-                        width: "80%", 
-                        transition: { 
-                          duration: 0.6, 
-                          ease: "easeInOut" 
-                        }
-                      }}
-                    />
-                  </motion.div>
-                </div>
-                
-                <div className="flex justify-center relative z-10">
-                  <motion.div 
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    whileInView={{ scale: 1, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
-                    whileHover={{
-                      boxShadow: "0 0 15px 2px rgba(101, 75, 228, 0.3)",
-                      transition: { duration: 0.4, ease: "easeOut" }
-                    }}
-                    className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 ${step.color} flex items-center justify-center text-white font-bold text-lg sm:text-xl flex-shrink-0 shadow-lg transition-all`}
-                  >
-                    {step.id}
-                  </motion.div>
-                </div>
-                
-                <div className={`flex-1 ${index % 2 === 0 ? 'lg:text-left lg:pl-16' : 'lg:text-right lg:pr-16'} pt-6 sm:pt-8 lg:pt-0 text-center lg:text-left`}>
-                  <motion.div 
-                    initial={{ y: 20, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 + 0.1, duration: 0.5 }}
-                    className="flex md:justify-center"
-                  >
-                    <motion.div 
-                      className={`bg-dark-700/50 p-3 sm:p-4 rounded-full cursor-pointer transition-all duration-300`}
-                      whileHover={{ 
-                        scale: 1.1,
-                        boxShadow: "0 0 15px 2px rgba(101, 75, 228, 0.3)",
-                        backgroundColor: "rgba(101, 75, 228, 0.15)",
-                        transition: { 
-                          duration: 0.5, 
-                          ease: "easeInOut" 
-                        } 
-                      }}
-                    >
-                      <motion.div
-                        whileHover={{ 
-                          rotate: [0, -5, 5, -3, 0],
-                          transition: { 
-                            duration: 0.8, 
-                            ease: "easeInOut",
-                            times: [0, 0.2, 0.5, 0.8, 1] 
-                          }
-                        }}
-                      >
-                        <step.icon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-400" />
-                      </motion.div>
-                    </motion.div>
-                  </motion.div>
+                <div className="glass-card p-8 rounded-2xl border border-white/5 hover:border-white/10 transition-all duration-300 h-full flex flex-col items-center text-center relative overflow-hidden">
+                  {/* Hover Glow */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+                  
+                  {/* Icon Circle */}
+                  <div className="relative mb-6">
+                    <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${step.color} p-0.5`}>
+                      <div className="w-full h-full bg-[#0c0c1d] rounded-full flex items-center justify-center">
+                        <step.icon className="w-7 h-7 text-white" />
+                      </div>
+                    </div>
+                    {/* Step Number Badge */}
+                    <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                      {step.id}
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{step.description}</p>
+
+                  {/* Arrow for mobile/tablet (not last item) */}
+                  {index < steps.length - 1 && (
+                    <div className="lg:hidden absolute -bottom-4 left-1/2 -translate-x-1/2 text-gray-600">
+                      <ArrowRight className="w-6 h-6 rotate-90 md:rotate-0" />
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}

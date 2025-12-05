@@ -124,38 +124,38 @@ const WalletConnectButton = ({ className = "" }) => {
           whileTap={{ scale: 0.95 }}
           onClick={connectWallet}
           disabled={isLoading}
-          className={`btn-primary text-sm py-1.5 px-3 flex items-center gap-1.5 ${className}`}
+          className={`btn-primary text-base py-2 px-4 flex items-center gap-2 ${className}`}
         >
           {isLoading ? (
             <>
-              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span className="text-xs">Connecting...</span>
+              <span className="text-sm">Connecting...</span>
             </> 
           ) : (
             <>
-              <span className="text-s">Connect Wallet</span>
-              <LogIn className="w-4 h-4" />
+              <span className="text-base">Connect Wallet</span>
+              <LogIn className="w-5 h-5" />
             </>
           )}
         </motion.button>
       ) : (
-        <div className="flex items-center space-x-1.5">
+        <div className="flex items-center space-x-2">
           <div 
-            className="bg-slate-800 border border-slate-700 text-white px-2 py-1 rounded-lg shadow-inner flex items-center cursor-pointer group hover:bg-slate-700"
+            className="bg-slate-800 border border-slate-700 text-white px-3 py-1.5 rounded-lg shadow-inner flex items-center cursor-pointer group hover:bg-slate-700"
             onClick={copyToClipboard}
           >
-            <div className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5"></div>
-            <span className="text-xs font-medium">
+            <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+            <span className="text-sm font-medium">
               {walletInfo?.principal && `${walletInfo.principal.substring(0, 4)}...${walletInfo.principal.substring(walletInfo.principal.length - 3)} (User)`}
             </span>
-            <div className="ml-1.5 text-slate-400 group-hover:text-purple-300">
+            <div className="ml-2 text-slate-400 group-hover:text-purple-300">
               {copied ? (
-                <CheckCircle className="h-3 w-3" />
+                <CheckCircle className="h-4 w-4" />
               ) : (
-                <Copy className="h-3 w-3" />
+                <Copy className="h-4 w-4" />
               )}
             </div>
           </div>
@@ -165,18 +165,18 @@ const WalletConnectButton = ({ className = "" }) => {
             whileTap={{ scale: 0.95 }}
             onClick={handleDisconnect}
             disabled={isDisconnecting}
-            className="bg-purple-900/30 hover:bg-purple-900/50 text-white text-xs py-1 px-2 rounded-lg flex items-center gap-1 border border-purple-800/50"
+            className="bg-purple-900/30 hover:bg-purple-900/50 text-white text-sm py-1.5 px-3 rounded-lg flex items-center gap-1.5 border border-purple-800/50"
             title="Disconnect"
           >
             {isDisconnecting ? (
-              <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
               <>
                 <span className="sr-only sm:not-sr-only">Disconnect</span>
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className="h-4 w-4" />
               </>
             )}
           </motion.button> 

@@ -36,7 +36,7 @@ const DashboardPage = () => {
     totalStaked: reports.reduce((sum, r) => sum + (r.stakeAmount || 0), 0),
     totalRewards: reports
       .filter(r => r.status === 'verified')
-      .reduce((sum, r) => sum + (r.reward || 0), 0)
+      .reduce((sum, r) => sum + (r.rewardAmount || 0), 0)
   };
 
   return (
@@ -46,7 +46,7 @@ const DashboardPage = () => {
         <p className="text-gray-400">Track your submitted reports and rewards</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <Card className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30">
           <div className="text-center">
             <p className="text-gray-400 text-sm">Total Reports</p>
@@ -65,6 +65,13 @@ const DashboardPage = () => {
           <div className="text-center">
             <p className="text-gray-400 text-sm">Verified</p>
             <p className="text-2xl font-bold">{userStats.verifiedReports}</p>
+          </div>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-red-900/30 to-rose-900/30">
+          <div className="text-center">
+            <p className="text-gray-400 text-sm">Rejected</p>
+            <p className="text-2xl font-bold">{userStats.rejectedReports}</p>
           </div>
         </Card>
         

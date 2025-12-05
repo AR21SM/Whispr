@@ -108,6 +108,15 @@ npm run dev
 Access the application at:
 http://localhost:4943
 ```
+### IPFS Storage Setup
+- Every report snapshot and evidence blob is pinned to IPFS (Pinata) through secure HTTPS outcalls.
+- For local testing the canister falls back to the credentials shared above, but **set your own secrets** via environment variables before `dfx deploy`:
+   - `WHISPR_PINATA_KEY`
+   - `WHISPR_PINATA_SECRET`
+   - `WHISPR_PINATA_JWT`
+- Authorities can rotate credentials on demand by calling the `configure_ipfs_credentials` update method without redeploying.
+- Each report/evidence now exposes an `ipfs_cid` so the frontend (or external tooling) can fetch content directly from IPFS gateways when needed.
+
 📸 Screenshots
 ![Home](src/Whispr_frontend/src/assets/readme_images/home1.png)	
 

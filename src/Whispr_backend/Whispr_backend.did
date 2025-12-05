@@ -28,6 +28,8 @@ type Report = record {
   reviewer: opt principal;
   review_date: opt nat64;
   review_notes: opt text;
+  ipfs_cid: opt text;
+  ipfs_pinned_at: opt nat64;
 };
 
 type MessageSender = variant {
@@ -73,6 +75,7 @@ type EvidenceFile = record {
   file_type: text;
   data: blob;
   upload_date: nat64;
+  ipfs_cid: opt text;
 };
 
 type DetailedAnalytics = record {
@@ -135,6 +138,11 @@ type Result_7 = variant {
   Err: text;
 };
 
+type Result_8 = variant {
+  Ok: text;
+  Err: text;
+};
+
 service : {
   // Report management
   submit_report: (text, text, text, opt Location, opt text, nat64, nat32) -> (Result);
@@ -163,18 +171,26 @@ service : {
   // Evidence management
   upload_evidence: (nat64, text, text, blob) -> (Result);
   get_evidence: (nat64) -> (opt EvidenceFile) query;
+  get_report_evidence: (nat64) -> (vec EvidenceFile) query;
+  
+  // IPFS data retrieval
+  retrieve_report_from_ipfs: (text) -> (Result_8);
+  retrieve_evidence_from_ipfs: (text) -> (Result_8);
   
   // User management
   get_user_balance: () -> (nat64) query;
   get_user_info: () -> (opt User) query;
   transfer_tokens: (principal, nat64) -> (Result_2);
   add_tokens_to_user: (principal, nat64) -> (Result_2);
+  configure_ipfs_credentials: (text, text, text) -> (Result_2);
   
   // Authority management
   is_authority: () -> (bool) query;
+  register_as_authority: () -> (Result_8);
   add_new_authority: (principal) -> (Result_2);
   remove_authority: (principal) -> (Result_2);
   get_all_authorities: () -> (Result_7) query;
+  cleanup_unauthorized_authorities: () -> (Result);
   
   // Statistics and analytics
   get_authority_statistics: () -> (Result_3) query;

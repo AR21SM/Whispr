@@ -113,11 +113,11 @@ const ReportViewPage = () => {
                 {report.category.charAt(0).toUpperCase() + report.category.slice(1)}
               </span>
               <span className="px-3 py-1 text-sm rounded-full bg-purple-900 bg-opacity-30 text-purple-400">
-                Stake: {report.stake} tokens
+                Stake: {report.stakeAmount} tokens
               </span>
-              {report.status === 'verified' && (
+              {report.status === 'verified' && report.rewardAmount > 0 && (
                 <span className="px-3 py-1 text-sm rounded-full bg-green-900 bg-opacity-30 text-green-400">
-                  Reward: {report.reward} tokens
+                  Reward: +{report.rewardAmount} tokens
                 </span>
               )}
             </div>

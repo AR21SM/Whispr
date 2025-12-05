@@ -2,11 +2,9 @@ use candid::{CandidType, Deserialize, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use serde::Serialize;
 use std::borrow::Cow;
-use std::convert::TryFrom;
-use std::collections::HashMap;
 
 // Report status enum
-#[derive(Clone, Debug, CandidType, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub enum ReportStatus {
     Pending,
     UnderReview,
@@ -22,6 +20,7 @@ pub struct EvidenceFile {
     pub file_type: String,
     pub data: Vec<u8>,
     pub upload_date: u64,
+    pub ipfs_cid: Option<String>,
 }
 
 impl Storable for EvidenceFile {
@@ -64,6 +63,8 @@ pub struct Report {
     pub reviewer: Option<Principal>,
     pub review_date: Option<u64>,
     pub review_notes: Option<String>,
+    pub ipfs_cid: Option<String>,
+    pub ipfs_pinned_at: Option<u64>,
 }
 
 impl Storable for Report {
@@ -161,6 +162,27 @@ pub struct RewardConfig {
     pub reward_multiplier: u64,  // Multiplier for rewards (e.g., 10x stake)
     pub min_stake_amount: u64,   // Minimum amount to stake
     pub max_stake_amount: u64,   // Maximum amount to stake
+}
+
+// Configuration for IPFS connectivity
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+pub struct IpfsConfig {
+    pub api_key: String,
+    pub api_secret: String,
+    pub jwt: String,
+}
+
+impl Storable for IpfsConfig {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        let bytes = candid::encode_one(self).unwrap();
+        Cow::Owned(bytes)
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        candid::decode_one(&bytes).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Unbounded;
 }
 
 // Statistics for authority dashboard

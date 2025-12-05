@@ -26,9 +26,16 @@ export const SORT_DIRECTIONS = {
   DESC: 'desc'
 };
 
+// Detect environment for canister configuration
+const isLocal = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.includes('.localhost')
+);
+
 export const CANISTER_CONFIG = {
-  CANISTER_ID: "vizcg-th777-77774-qaaea-cai",
-  HOST: "http://localhost:4943"
+  CANISTER_ID: isLocal ? "uxrrr-q7777-77774-qaaaq-cai" : "bdggw-2qaaa-aaaag-aua3q-cai",
+  HOST: isLocal ? "http://localhost:4943" : "https://icp-api.io"
 };
 
 export const STORAGE_KEYS = {

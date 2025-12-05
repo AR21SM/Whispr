@@ -8,8 +8,34 @@ fn init() {
     authority::handlers::init();
 }
 
+#[post_upgrade]
+fn post_upgrade() {
+    authority::handlers::post_upgrade();
+}
+
+// Debug function to check storage state
+#[query]
+fn debug_storage_state() -> String {
+    let reports_count = authority::store::get_all_reports_for_debug();
+    let authorities = authority::store::get_all_authorities();
+    let auth_ids: Vec<String> = authorities.iter().map(|a| a.id.to_text()).collect();
+    format!(
+        "Reports: {}, Authorities: {}, Authority IDs: {:?}",
+        reports_count, authorities.len(), auth_ids
+    )
+}
+
+// Debug is_authority check
+#[query]
+fn debug_is_authority(id: Principal) -> String {
+    let (result, size, keys) = authority::store::is_authority_debug(id);
+    format!(
+        "is_authority({}) = {}, map_size = {}, stored_keys = {:?}",
+        id.to_text(), result, size, keys
+    )
+}
 #[update]
-fn submit_report(
+async fn submit_report(
     title: String,
     description: String,
     category: String,
@@ -18,7 +44,7 @@ fn submit_report(
     stake_amount: u64,
     evidence_count: u32,
 ) -> Result<u64, String> {
-    authority::handlers::submit_report(title, description, category, location, incident_date, stake_amount, evidence_count)
+    authority::handlers::submit_report(title, description, category, location, incident_date, stake_amount, evidence_count).await
 }
 
 #[query]
@@ -39,6 +65,16 @@ fn get_report(id: u64) -> Vec<authority::types::Report> {
 #[query]
 fn get_user_reports() -> Vec<authority::types::Report> {
     authority::handlers::get_user_reports()
+}
+
+#[update]
+fn verify_report(report_id: u64, notes: Option<String>) -> Result<(), String> {
+    authority::handlers::verify_report(report_id, notes)
+}
+
+#[update]
+fn reject_report(report_id: u64, notes: Option<String>) -> Result<(), String> {
+    authority::handlers::reject_report(report_id, notes)
 }
 
 #[update]
@@ -116,6 +152,11 @@ fn add_tokens_to_user(user_id: Principal, amount: u64) -> Result<(), String> {
     Ok(())
 }
 
+#[update]
+fn configure_ipfs_credentials(api_key: String, api_secret: String, jwt: String) -> Result<(), String> {
+    authority::handlers::configure_ipfs_credentials(api_key, api_secret, jwt)
+}
+
 #[query]
 fn is_authority() -> bool {
     let caller = ic_cdk::caller();
@@ -123,6 +164,116 @@ fn is_authority() -> bool {
         return false;
     }
     authority::store::is_authority(caller)
+}
+
+// Debug function to check if a specific principal is an authority
+#[query]
+fn check_authority_status(principal_text: String) -> Result<bool, String> {
+    let principal = Principal::from_text(&principal_text)
+        .map_err(|_| format!("Invalid principal: {}", principal_text))?;
+    Ok(authority::store::is_authority(principal))
+}
+
+// Register the caller as an authority - RESTRICTED to specific authorized principal only
+// Only the hardcoded AUTHORIZED_PRINCIPAL can register as authority
+#[update]
+fn register_as_authority() -> Result<String, String> {
+    let caller = ic_cdk::caller();
+    
+    if caller == Principal::anonymous() {
+        return Err("Anonymous callers cannot be registered as authority".to_string());
+    }
+    
+    // Only allow the specific authorized principal to register as authority
+    const AUTHORIZED_PRINCIPAL: &str = "d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe";
+    let authorized = Principal::from_text(AUTHORIZED_PRINCIPAL).unwrap();
+    
+    if caller != authorized {
+        return Err("Only the authorized principal can register as authority".to_string());
+    }
+    
+    if authority::store::is_authority(caller) {
+        return Ok(format!("Already registered as authority: {}", caller.to_text()));
+    }
+    
+    let authority = authority::types::Authority {
+        id: caller,
+        reports_reviewed: Vec::new(),
+        approval_rate: 0.0,
+    };
+    
+    authority::store::add_authority(authority);
+    Ok(format!("Registered as authority: {}", caller.to_text()))
+}
+
+// Initialize the hardcoded authority - can be called by controllers
+// Force adds regardless of existing state to fix storage issues
+#[update]
+fn initialize_hardcoded_authority() -> Result<String, String> {
+    const AUTHORIZED_PRINCIPAL: &str = "d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe";
+    
+    let authorized = Principal::from_text(AUTHORIZED_PRINCIPAL)
+        .map_err(|_| "Invalid authorized principal".to_string())?;
+    
+    // Force add the authority regardless of current state
+    let auth = authority::types::Authority {
+        id: authorized,
+        reports_reviewed: Vec::new(),
+        approval_rate: 0.0,
+    };
+    authority::store::add_authority(auth.clone());
+    
+    // Verify it was added
+    let is_auth = authority::store::is_authority(authorized);
+    let all_auths = authority::store::get_all_authorities();
+    
+    Ok(format!(
+        "Force registered authority: {}. Verification: is_authority={}, total_authorities={}",
+        AUTHORIZED_PRINCIPAL, is_auth, all_auths.len()
+    ))
+}
+
+// Cleanup function: Remove all authorities except the hardcoded authorized principal
+// This is a one-time fix function to clean up accidentally registered authorities
+#[update]
+fn cleanup_unauthorized_authorities() -> Result<u64, String> {
+    let caller = ic_cdk::caller();
+    
+    // Hardcoded authorized principal and the canister deployer/controller
+    const AUTHORIZED_PRINCIPAL: &str = "d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe";
+    const CONTROLLER_PRINCIPAL: &str = "hf7uc-glbhb-eoag6-ebhuc-k3y5f-3wp7c-4kvdw-wfgah-j2om5-tw57e-gqe";
+    
+    let authorized = Principal::from_text(AUTHORIZED_PRINCIPAL)
+        .map_err(|_| "Invalid authorized principal".to_string())?;
+    let controller = Principal::from_text(CONTROLLER_PRINCIPAL)
+        .map_err(|_| "Invalid controller principal".to_string())?;
+    
+    // Allow the authorized principal, controller, or existing authorities to call this
+    if caller != authorized && caller != controller && !authority::store::is_authority(caller) {
+        return Err("Only the authorized principal or controller can perform cleanup".to_string());
+    }
+    
+    let all_authorities = authority::store::get_all_authorities();
+    let mut removed_count: u64 = 0;
+    
+    for auth in all_authorities {
+        if auth.id != authorized {
+            authority::store::remove_authority(auth.id);
+            removed_count += 1;
+        }
+    }
+    
+    // Make sure the authorized principal is an authority
+    if !authority::store::is_authority(authorized) {
+        let auth = authority::types::Authority {
+            id: authorized,
+            reports_reviewed: Vec::new(),
+            approval_rate: 0.0,
+        };
+        authority::store::add_authority(auth);
+    }
+    
+    Ok(removed_count)
 }
 
 #[update]
@@ -211,8 +362,11 @@ fn get_reports_paginated(page: u64, page_size: u64) -> Result<(Vec<authority::ty
         return Err("Unauthorized".to_string());
     }
     
-    let all_reports = authority::store::get_all_reports();
+    let mut all_reports = authority::store::get_all_reports();
     let total_count = all_reports.len() as u64;
+    
+    // Sort by date_submitted descending (newest first) for better UX
+    all_reports.sort_by(|a, b| b.date_submitted.cmp(&a.date_submitted));
     
     let start_index = (page * page_size) as usize;
     let end_index = std::cmp::min(start_index + page_size as usize, all_reports.len());
@@ -231,13 +385,8 @@ fn get_reports_by_category(category: String) -> Result<Vec<authority::types::Rep
         return Err("Unauthorized".to_string());
     }
     
-    let all_reports = authority::store::get_all_reports();
-    let filtered_reports: Vec<authority::types::Report> = all_reports
-        .into_iter()
-        .filter(|report| report.category.to_lowercase() == category.to_lowercase())
-        .collect();
-    
-    Ok(filtered_reports)
+    // O(1) lookup using category index instead of O(n) iteration
+    Ok(authority::store::get_reports_by_category(&category))
 }
 
 #[query]
@@ -269,44 +418,13 @@ fn search_reports(
 }
 
 #[update]
-fn upload_evidence(
+async fn upload_evidence(
     report_id: u64,
     file_name: String,
     file_type: String,
     file_data: Vec<u8>,
 ) -> Result<u64, String> {
-    let caller = ic_cdk::caller();
-    
-    if caller == Principal::anonymous() {
-        return Err("Anonymous callers cannot upload evidence".to_string());
-    }
-    
-    let report = match authority::store::get_report(report_id) {
-        Some(report) => report,
-        None => return Err("Report not found".to_string()),
-    };
-    
-    if report.submitter_id != caller {
-        return Err("You can only upload evidence for your own reports".to_string());
-    }
-    
-    let evidence = authority::types::EvidenceFile {
-        id: 0,
-        name: file_name,
-        file_type,
-        data: file_data,
-        upload_date: ic_cdk::api::time(),
-    };
-    
-    let evidence_id = authority::store::add_evidence_file(&evidence);
-    
-    let mut updated_report = report;
-    updated_report.evidence_files.push(evidence_id);
-    updated_report.evidence_count = updated_report.evidence_files.len() as u32;
-    
-    authority::store::update_report(updated_report)?;
-    
-    Ok(evidence_id)
+    authority::handlers::upload_evidence(report_id, file_name, file_type, file_data).await
 }
 
 #[query]
@@ -327,6 +445,58 @@ fn get_evidence(evidence_id: u64) -> Option<authority::types::EvidenceFile> {
     } else {
         None
     }
+}
+
+#[query]
+fn get_report_evidence(report_id: u64) -> Vec<authority::types::EvidenceFile> {
+    let caller = ic_cdk::caller();
+    
+    if caller == Principal::anonymous() {
+        return Vec::new();
+    }
+    
+    let all_reports = authority::store::get_all_reports();
+    let report = match all_reports.iter().find(|r| r.id == report_id) {
+        Some(r) => r,
+        None => return Vec::new(),
+    };
+    
+    // Only submitter or authority can view evidence
+    if report.submitter_id != caller && !authority::store::is_authority(caller) {
+        return Vec::new();
+    }
+    
+    report.evidence_files.iter()
+        .filter_map(|id| authority::store::get_evidence_file(*id))
+        .collect()
+}
+
+#[update]
+async fn retrieve_report_from_ipfs(cid: String) -> Result<String, String> {
+    let caller = ic_cdk::caller();
+    
+    if caller == Principal::anonymous() {
+        return Err("Anonymous callers not allowed".to_string());
+    }
+    
+    if !authority::store::is_authority(caller) {
+        return Err("Only authorities can retrieve from IPFS".to_string());
+    }
+    
+    let data = authority::ipfs::retrieve_from_ipfs(&cid).await?;
+    String::from_utf8(data).map_err(|e| format!("Invalid UTF-8: {}", e))
+}
+
+#[update]
+async fn retrieve_evidence_from_ipfs(cid: String) -> Result<String, String> {
+    let caller = ic_cdk::caller();
+    
+    if caller == Principal::anonymous() {
+        return Err("Anonymous callers not allowed".to_string());
+    }
+    
+    let data = authority::ipfs::retrieve_from_ipfs(&cid).await?;
+    String::from_utf8(data).map_err(|e| format!("Invalid UTF-8: {}", e))
 }
 
 #[update]

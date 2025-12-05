@@ -1,21 +1,21 @@
-use crate::authority::store;
+use crate::authority::{ipfs, store};
 use crate::authority::types::*;
 use candid::Principal;
 use ic_cdk::{api, caller};
 
-fn ensure_authority() ->     let report_id = store::create_report(report)?;
-    
-    let mut updated_user = user;lt<Principal, String> {
+const MAX_EVIDENCE_BYTES: usize = 2 * 1024 * 1024; // 2MB safety cap
+
+fn ensure_authority() -> Result<Principal, String> {
     let caller = caller();
-    
+
     if caller == Principal::anonymous() {
         return Err("Anonymous callers are not allowed".to_string());
     }
-    
+
     if !store::is_authority(caller) {
         return Err("Caller is not an authorized authority".to_string());
     }
-    
+
     Ok(caller)
 }
 
@@ -51,7 +51,12 @@ fn validate_report_input(
         return Err("Description too long (max 5000 characters)".to_string());
     }
     
-    let valid_categories = ["environmental", "fraud", "cybercrime", "corruption", "safety", "other"];
+    let valid_categories = [
+        "environmental", "environment", "fraud", "cybercrime", "corruption", "safety", "other",
+        "acid attacks", "bribery", "domestic_violence", "drug_crimes", "human_trafficking",
+        "kidnapping", "money_laundering", "murder", "sexual_assault", "theft",
+        "violence", "harassment"  // Added missing categories from frontend
+    ];
     if !valid_categories.contains(&category.to_lowercase().as_str()) {
         return Err("Invalid category".to_string());
     }
@@ -67,12 +72,36 @@ fn validate_report_input(
     Ok(())
 }
 
+// Ensure the hardcoded authority principal is always registered
+fn ensure_hardcoded_authority() {
+    const AUTHORIZED_PRINCIPAL: &str = "d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe";
+    if let Ok(authorized) = Principal::from_text(AUTHORIZED_PRINCIPAL) {
+        if !store::is_authority(authorized) {
+            let authority = Authority {
+                id: authorized,
+                reports_reviewed: Vec::new(),
+                approval_rate: 0.0,
+            };
+            store::add_authority(authority);
+            ic_cdk::api::print(format!("Initialized hardcoded authority: {}", AUTHORIZED_PRINCIPAL));
+        }
+    }
+}
+
 pub fn init() {
-    store::initialize_mock_data();
+    store::ensure_default_ipfs_config();
+    store::rebuild_indexes();
+    ensure_hardcoded_authority();
+}
+
+pub fn post_upgrade() {
+    store::ensure_default_ipfs_config();
+    store::rebuild_indexes();
+    ensure_hardcoded_authority();
 }
 
 
-pub fn submit_report(
+pub async fn submit_report(
     title: String,
     description: String,
     category: String,
@@ -135,6 +164,8 @@ pub fn submit_report(
         reviewer: None,
         review_date: None,
         review_notes: None,
+        ipfs_cid: None,
+        ipfs_pinned_at: None,
     };
     
     let report_id = store::create_report(&report);
@@ -156,6 +187,17 @@ pub fn submit_report(
     };
     
     store::create_message(&system_message);
+
+    if let Some(stored_report) = store::get_report(report_id) {
+        match ipfs::pin_report_snapshot(&stored_report).await {
+            Ok(cid) => {
+                let _ = store::set_report_ipfs_metadata(report_id, cid, api::time());
+            }
+            Err(err) => {
+                ic_cdk::api::print(format!("Failed to pin report {report_id} to IPFS: {err}"));
+            }
+        }
+    }
     
     Ok(report_id)
 }
@@ -412,6 +454,62 @@ pub fn put_under_review(report_id: u64, notes: Option<String>) -> Result<(), Str
     Ok(())
 }
 
+pub async fn upload_evidence(
+    report_id: u64,
+    file_name: String,
+    file_type: String,
+    file_data: Vec<u8>,
+) -> Result<u64, String> {
+    let caller = ensure_authenticated()?;
+
+    if file_data.is_empty() {
+        return Err("Evidence file cannot be empty".to_string());
+    }
+
+    if file_data.len() > MAX_EVIDENCE_BYTES {
+        return Err(format!("Evidence file exceeds {} bytes limit", MAX_EVIDENCE_BYTES));
+    }
+
+    let report = store::get_report(report_id).ok_or_else(|| "Report not found".to_string())?;
+
+    if report.submitter_id != caller {
+        return Err("You can only upload evidence for your own reports".to_string());
+    }
+
+    let evidence = EvidenceFile {
+        id: 0,
+        name: file_name.trim().to_string(),
+        file_type: file_type.trim().to_string(),
+        data: file_data,
+        upload_date: api::time(),
+        ipfs_cid: None,
+    };
+
+    let evidence_id = store::add_evidence_file(&evidence);
+
+    let mut updated_report = report;
+    updated_report.evidence_files.push(evidence_id);
+    updated_report.evidence_count = updated_report.evidence_files.len() as u32;
+    store::update_report(updated_report)?;
+
+    match ipfs::pin_evidence_blob(report_id, &evidence).await {
+        Ok(cid) => {
+            let _ = store::set_evidence_ipfs_cid(evidence_id, cid);
+        }
+        Err(err) => {
+            ic_cdk::api::print(format!("Failed to pin evidence {evidence_id} for report {report_id}: {err}"));
+        }
+    }
+
+    if let Some(latest_report) = store::get_report(report_id) {
+        if let Ok(cid) = ipfs::pin_report_snapshot(&latest_report).await {
+            let _ = store::set_report_ipfs_metadata(report_id, cid, api::time());
+        }
+    }
+
+    Ok(evidence_id)
+}
+
 // Send a message as authority
 
 pub fn send_message_as_authority(report_id: u64, content: String) -> Result<(), String> {
@@ -513,7 +611,19 @@ pub fn get_user_balance() -> u64 {
     
     match store::get_user(caller) {
         Some(user) => user.token_balance,
-        None => 0
+        None => {
+            // Create new user with initial 100 tokens
+            let new_user = User {
+                id: caller,
+                token_balance: 100,
+                reports_submitted: Vec::new(),
+                rewards_earned: 0,
+                stakes_active: 0,
+                stakes_lost: 0,
+            };
+            store::create_or_update_user(new_user);
+            100
+        }
     }
 }
 
@@ -541,6 +651,23 @@ pub fn add_new_authority(id: Principal) -> Result<(), String> {
     
     store::add_authority(authority);
     
+    Ok(())
+}
+
+pub fn configure_ipfs_credentials(api_key: String, api_secret: String, jwt: String) -> Result<(), String> {
+    ensure_authority()?;
+
+    if api_key.trim().is_empty() || api_secret.trim().is_empty() || jwt.trim().is_empty() {
+        return Err("IPFS credentials cannot be empty".to_string());
+    }
+
+    let config = IpfsConfig {
+        api_key: api_key.trim().to_string(),
+        api_secret: api_secret.trim().to_string(),
+        jwt: jwt.trim().to_string(),
+    };
+
+    store::set_ipfs_config(config);
     Ok(())
 }
 
@@ -602,7 +729,7 @@ pub fn bulk_verify_reports(report_ids: Vec<u64>, notes: Option<String>) -> Resul
     Ok(successfully_verified)
 }
 
-// Advanced search functionality
+// Advanced search functionality - optimized with indexed lookups
 
 pub fn search_reports(
     keyword: Option<String>,
@@ -615,10 +742,21 @@ pub fn search_reports(
 ) -> Result<Vec<Report>, String> {
     ensure_authority()?;
     
-    let all_reports = store::get_all_reports();
-    let mut filtered_reports = all_reports;
+    let mut used_status_index = false;
+    let mut used_category_index = false;
     
-    // Apply filters
+    // Start with the most restrictive filter to minimize dataset
+    let mut filtered_reports: Vec<Report> = if let Some(ref stat) = status {
+        used_status_index = true;
+        store::get_reports_by_status(stat.clone())
+    } else if let Some(ref cat) = category {
+        used_category_index = true;
+        store::get_reports_by_category(cat)
+    } else {
+        store::get_all_reports()
+    };
+    
+    // Apply remaining filters
     if let Some(keyword) = keyword {
         let keyword_lower = keyword.to_lowercase();
         filtered_reports.retain(|r| {
@@ -627,12 +765,19 @@ pub fn search_reports(
         });
     }
     
-    if let Some(cat) = category {
-        filtered_reports.retain(|r| r.category.to_lowercase() == cat.to_lowercase());
+    // If category was not used as initial filter, apply it now
+    if !used_category_index {
+        if let Some(ref cat) = category {
+            let cat_lower = cat.to_lowercase();
+            filtered_reports.retain(|r| r.category.to_lowercase() == cat_lower);
+        }
     }
     
-    if let Some(stat) = status {
-        filtered_reports.retain(|r| r.status == stat);
+    // If status was not used as initial filter, apply it now
+    if !used_status_index {
+        if let Some(stat) = status {
+            filtered_reports.retain(|r| r.status == stat);
+        }
     }
     
     if let Some(from) = date_from {

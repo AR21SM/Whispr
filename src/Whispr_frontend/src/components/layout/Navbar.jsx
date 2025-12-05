@@ -57,16 +57,16 @@ const Navbar = () => {
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between">
           {/* Logo - Left */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-3">
             <motion.div
               whileHover={{ rotate: 10 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <Shield className={`h-8 w-8 ${isAuthorized ? 'text-red-500' : 'text-primary-500'}`} />
+              <Shield className={`h-10 w-10 ${isAuthorized ? 'text-red-500' : 'text-primary-500'}`} />
             </motion.div>
             <div className="flex flex-col">
-              <span className="font-bold text-xl text-white">Whispr</span>
-              <span className="text-xs text-gray-400">Anonymous Reporting</span>
+              <span className="font-bold text-2xl text-white">Whispr</span>
+              <span className="text-sm text-gray-400">Anonymous Reporting</span>
             </div>
           </Link>
 
@@ -165,7 +165,7 @@ const Navbar = () => {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`relative px-4 py-2 rounded-md transition-colors ${
+                    className={`relative px-6 py-3 rounded-md transition-colors text-lg ${
                       isActive
                         ? isAuthorized ? 'text-red-400 font-medium' : 'text-primary-400 font-medium'
                         : 'text-gray-300 hover:text-white'

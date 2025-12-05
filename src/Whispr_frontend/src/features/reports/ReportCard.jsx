@@ -31,6 +31,11 @@ const ReportCard = ({ report, onView, showActions = true }) => {
           <Badge variant="default">
             {report.stakeAmount || 0} tokens
           </Badge>
+          {report.status === 'verified' && report.rewardAmount > 0 && (
+            <Badge variant="verified">
+              +{report.rewardAmount} reward
+            </Badge>
+          )}
           <Badge variant="default">
             {formatDate(report.date)}
           </Badge>

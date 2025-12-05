@@ -3,7 +3,13 @@ use candid::Principal;
 use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager, VirtualMemory}, 
                           DefaultMemoryImpl, StableBTreeMap};
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
+
+// IPFS/Pinata credentials - These should be configured via the configure_ipfs_credentials function
+// The defaults are placeholders that will not work - you must configure real credentials
+const DEFAULT_PINATA_API_KEY: &str = "CONFIGURE_VIA_API";
+const DEFAULT_PINATA_SECRET: &str = "CONFIGURE_VIA_API";
+const DEFAULT_PINATA_JWT: &str = "CONFIGURE_VIA_API";
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 
@@ -46,6 +52,13 @@ thread_local! {
             MEMORY_MANAGER.with(|mm| mm.borrow().get(MemoryId::new(4))),
         )
     );
+
+    // IPFS configuration storage (single entry)
+    static IPFS_CONFIG: RefCell<StableBTreeMap<u8, IpfsConfig, Memory>> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|mm| mm.borrow().get(MemoryId::new(5))),
+        )
+    );
     
     // Counters for IDs
     static NEXT_REPORT_ID: RefCell<u64> = RefCell::new(1);
@@ -69,9 +82,71 @@ thread_local! {
     
     // Report messages mapping (report_id -> message_ids)
     static REPORT_MESSAGES: RefCell<HashMap<u64, Vec<u64>>> = RefCell::new(HashMap::new());
+    
+    // In-memory indexes for faster queries - O(1) lookups
+    static STATUS_INDEX: RefCell<HashMap<ReportStatus, BTreeSet<u64>>> = RefCell::new(HashMap::new());
+    static CATEGORY_INDEX: RefCell<HashMap<String, BTreeSet<u64>>> = RefCell::new(HashMap::new());
+    static USER_REPORTS_INDEX: RefCell<HashMap<Principal, BTreeSet<u64>>> = RefCell::new(HashMap::new());
 }
 
-// Reports operations
+// Reports operations - Index management for O(1) lookups
+fn add_status_index_entry(status: &ReportStatus, report_id: u64) {
+    STATUS_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        map.entry(status.clone()).or_insert_with(BTreeSet::new).insert(report_id);
+    });
+}
+
+fn remove_status_index_entry(status: &ReportStatus, report_id: u64) {
+    STATUS_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        if let Some(entry) = map.get_mut(status) {
+            entry.remove(&report_id);
+            if entry.is_empty() {
+                map.remove(status);
+            }
+        }
+    });
+}
+
+fn add_category_index_entry(category: &str, report_id: u64) {
+    CATEGORY_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        map.entry(category.to_lowercase()).or_insert_with(BTreeSet::new).insert(report_id);
+    });
+}
+
+fn remove_category_index_entry(category: &str, report_id: u64) {
+    CATEGORY_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        if let Some(entry) = map.get_mut(&category.to_lowercase()) {
+            entry.remove(&report_id);
+            if entry.is_empty() {
+                map.remove(&category.to_lowercase());
+            }
+        }
+    });
+}
+
+fn add_user_report_index_entry(user_id: Principal, report_id: u64) {
+    USER_REPORTS_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        map.entry(user_id).or_insert_with(BTreeSet::new).insert(report_id);
+    });
+}
+
+fn remove_user_report_index_entry(user_id: Principal, report_id: u64) {
+    USER_REPORTS_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        if let Some(entry) = map.get_mut(&user_id) {
+            entry.remove(&report_id);
+            if entry.is_empty() {
+                map.remove(&user_id);
+            }
+        }
+    });
+}
+
 pub fn create_report(report: &Report) -> u64 {
     let id = NEXT_REPORT_ID.with(|counter| {
         let id = *counter.borrow();
@@ -83,8 +158,13 @@ pub fn create_report(report: &Report) -> u64 {
     new_report.id = id;
     
     REPORTS.with(|reports| {
-        reports.borrow_mut().insert(id, new_report);
+        reports.borrow_mut().insert(id, new_report.clone());
     });
+    
+    // Add to all indexes for O(1) lookups
+    add_status_index_entry(&report.status, id);
+    add_category_index_entry(&report.category, id);
+    add_user_report_index_entry(report.submitter_id, id);
     
     // Update stats
     AUTHORITY_STATS.with(|stats| {
@@ -107,14 +187,65 @@ pub fn get_all_reports() -> Vec<Report> {
     })
 }
 
-pub fn get_reports_by_status(status: ReportStatus) -> Vec<Report> {
+pub fn get_all_reports_for_debug() -> usize {
     REPORTS.with(|reports| {
-        let reports_map = reports.borrow();
-        reports_map.iter()
-            .filter(|(_, r)| r.status == status)
-            .map(|(_, report)| report)
-            .collect()
+        reports.borrow().len() as usize
     })
+}
+
+pub fn rebuild_indexes() {
+    let reports = get_all_reports();
+    
+    // Rebuild status index
+    STATUS_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        map.clear();
+        for report in &reports {
+            map.entry(report.status.clone()).or_insert_with(BTreeSet::new).insert(report.id);
+        }
+    });
+    
+    // Rebuild category index
+    CATEGORY_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        map.clear();
+        for report in &reports {
+            map.entry(report.category.to_lowercase()).or_insert_with(BTreeSet::new).insert(report.id);
+        }
+    });
+    
+    // Rebuild user reports index
+    USER_REPORTS_INDEX.with(|idx| {
+        let mut map = idx.borrow_mut();
+        map.clear();
+        for report in &reports {
+            map.entry(report.submitter_id).or_insert_with(BTreeSet::new).insert(report.id);
+        }
+    });
+}
+
+// O(1) lookup by status using index
+pub fn get_reports_by_status(status: ReportStatus) -> Vec<Report> {
+    let report_ids: Vec<u64> = STATUS_INDEX.with(|idx| {
+        idx.borrow()
+            .get(&status)
+            .cloned()
+            .map(|set| set.into_iter().collect())
+            .unwrap_or_default()
+    });
+    report_ids.into_iter().filter_map(get_report).collect()
+}
+
+// O(1) lookup by category using index
+pub fn get_reports_by_category(category: &str) -> Vec<Report> {
+    let report_ids: Vec<u64> = CATEGORY_INDEX.with(|idx| {
+        idx.borrow()
+            .get(&category.to_lowercase())
+            .cloned()
+            .map(|set| set.into_iter().collect())
+            .unwrap_or_default()
+    });
+    report_ids.into_iter().filter_map(get_report).collect()
 }
 
 pub fn update_report(report: Report) -> Result<(), String> {
@@ -128,7 +259,7 @@ pub fn update_report(report: Report) -> Result<(), String> {
     
     let old_report = old_report.unwrap();
     
-    // Update stats if status changed
+    // Update indexes if status or category changed
     if old_report.status != report.status {
         AUTHORITY_STATS.with(|stats| {
             let mut stats = stats.borrow_mut();
@@ -146,6 +277,13 @@ pub fn update_report(report: Report) -> Result<(), String> {
                 _ => {}
             }
         });
+        remove_status_index_entry(&old_report.status, report_id);
+        add_status_index_entry(&report.status, report_id);
+    }
+    
+    if old_report.category != report.category {
+        remove_category_index_entry(&old_report.category, report_id);
+        add_category_index_entry(&report.category, report_id);
     }
     
     REPORTS.with(|reports| {
@@ -168,11 +306,15 @@ pub fn create_or_update_user(user: User) {
     });
 }
 
+// Get user's reports - directly filter from stable storage for reliability
+// This ensures correct filtering even if in-memory index is out of sync
 pub fn get_user_reports(user_id: Principal) -> Vec<Report> {
+    // Direct filter from stable storage - most reliable
     REPORTS.with(|reports| {
         let reports_map = reports.borrow();
-        reports_map.iter()
-            .filter(|(_, r)| r.submitter_id == user_id)
+        reports_map
+            .iter()
+            .filter(|(_, report)| report.submitter_id == user_id)
             .map(|(_, report)| report)
             .collect()
     })
@@ -225,7 +367,20 @@ pub fn transfer_tokens(from: Principal, to: Principal, amount: u64) -> Result<()
 // Authority operations
 pub fn is_authority(id: Principal) -> bool {
     AUTHORITIES.with(|authorities| {
-        authorities.borrow().contains_key(&id)
+        let auth_map = authorities.borrow();
+        let result = auth_map.contains_key(&id);
+        ic_cdk::api::print(format!("is_authority check for {}: {}, map size: {}", id.to_text(), result, auth_map.len()));
+        result
+    })
+}
+
+pub fn is_authority_debug(id: Principal) -> (bool, usize, Vec<String>) {
+    AUTHORITIES.with(|authorities| {
+        let auth_map = authorities.borrow();
+        let result = auth_map.contains_key(&id);
+        let size = auth_map.len() as usize;
+        let keys: Vec<String> = auth_map.iter().map(|(k, _)| k.to_text()).collect();
+        (result, size, keys)
     })
 }
 
@@ -323,9 +478,81 @@ pub fn get_evidence_file(id: u64) -> Option<EvidenceFile> {
     })
 }
 
+pub fn update_evidence_file(file: EvidenceFile) -> Result<(), String> {
+    let id = file.id;
+    let exists = EVIDENCE_FILES.with(|files| files.borrow().contains_key(&id));
+    if !exists {
+        return Err("Evidence file not found".to_string());
+    }
+    EVIDENCE_FILES.with(|files| {
+        files.borrow_mut().insert(id, file);
+    });
+    Ok(())
+}
+
+pub fn set_report_ipfs_metadata(report_id: u64, cid: String, pinned_at: u64) -> Result<(), String> {
+    let mut report = get_report(report_id).ok_or_else(|| "Report not found".to_string())?;
+    report.ipfs_cid = Some(cid);
+    report.ipfs_pinned_at = Some(pinned_at);
+    update_report(report)
+}
+
+pub fn set_evidence_ipfs_cid(evidence_id: u64, cid: String) -> Result<(), String> {
+    let mut evidence = get_evidence_file(evidence_id).ok_or_else(|| "Evidence file not found".to_string())?;
+    evidence.ipfs_cid = Some(cid);
+    update_evidence_file(evidence)
+}
+
+pub fn ensure_default_ipfs_config() {
+    IPFS_CONFIG.with(|cfg| {
+        let mut store = cfg.borrow_mut();
+        if store.get(&0).is_none() {
+            let config = IpfsConfig {
+                api_key: option_env!("WHISPR_PINATA_KEY").unwrap_or(DEFAULT_PINATA_API_KEY).to_string(),
+                api_secret: option_env!("WHISPR_PINATA_SECRET").unwrap_or(DEFAULT_PINATA_SECRET).to_string(),
+                jwt: option_env!("WHISPR_PINATA_JWT").unwrap_or(DEFAULT_PINATA_JWT).to_string(),
+            };
+            store.insert(0, config);
+        }
+    });
+}
+
+pub fn get_ipfs_config() -> Option<IpfsConfig> {
+    IPFS_CONFIG.with(|cfg| cfg.borrow().get(&0))
+}
+
+pub fn set_ipfs_config(config: IpfsConfig) {
+    IPFS_CONFIG.with(|cfg| {
+        cfg.borrow_mut().insert(0, config);
+    });
+}
+
 // Statistics
 pub fn get_authority_stats() -> AuthorityStats {
-    AUTHORITY_STATS.with(|stats| stats.borrow().clone())
+    // Dynamically calculate stats from actual reports
+    let all_reports = get_all_reports();
+    
+    let reports_pending = all_reports.iter()
+        .filter(|r| matches!(r.status, ReportStatus::Pending))
+        .count() as u64;
+    
+    let reports_verified = all_reports.iter()
+        .filter(|r| matches!(r.status, ReportStatus::Approved))
+        .count() as u64;
+    
+    let reports_rejected = all_reports.iter()
+        .filter(|r| matches!(r.status, ReportStatus::Rejected))
+        .count() as u64;
+    
+    // Get the stored total_rewards_distributed
+    let stored_stats = AUTHORITY_STATS.with(|stats| stats.borrow().clone());
+    
+    AuthorityStats {
+        reports_pending,
+        reports_verified,
+        reports_rejected,
+        total_rewards_distributed: stored_stats.total_rewards_distributed,
+    }
 }
 
 pub fn update_authority_stats(stats: AuthorityStats) {
@@ -334,253 +561,9 @@ pub fn update_authority_stats(stats: AuthorityStats) {
     });
 }
 
-// Initialize mock data for testing
+// Initialize mock data for testing (disabled - only real submissions now)
 pub fn initialize_mock_data() {
-    // Only initialize if no data exists
-    let report_count = REPORTS.with(|reports| reports.borrow().len());
-    
-    if report_count > 0 {
-        return; // Data already exists
-    }
-    
-    // Create authorities - including the current deployer
-    let current_principal = ic_cdk::caller();
-    let authority_current = Authority {
-        id: current_principal,
-        reports_reviewed: Vec::new(),
-        approval_rate: 0.0,
-    };
-    
-    let authority1 = Authority {
-        id: Principal::from_text("d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe").unwrap_or_else(|_| Principal::anonymous()),
-        reports_reviewed: Vec::new(),
-        approval_rate: 0.0,
-    };
-    
-    add_authority(authority_current);
-    add_authority(authority1);
-    
-    // Create users
-    let user1 = User {
-        id: Principal::from_text("2vxsx-fae").unwrap_or_else(|_| Principal::anonymous()),
-        token_balance: 500,
-        reports_submitted: Vec::new(),
-        rewards_earned: 0,
-        stakes_active: 0,
-        stakes_lost: 0,
-    };
-    
-    let user2 = User {
-        id: Principal::from_text("3dkmc-byamr-3ypol-hgppr-645za-wxgml-ba5t2-a").unwrap_or_else(|_| Principal::anonymous()),
-        token_balance: 750,
-        reports_submitted: Vec::new(),
-        rewards_earned: 0,
-        stakes_active: 0,
-        stakes_lost: 0,
-    };
-    
-    let user3 = User {
-        id: Principal::from_text("2ibo7-dia").unwrap_or_else(|_| Principal::anonymous()),
-        token_balance: 1000,
-        reports_submitted: Vec::new(),
-        rewards_earned: 0,
-        stakes_active: 0,
-        stakes_lost: 0,
-    };
-    
-    create_or_update_user(user1.clone());
-    create_or_update_user(user2.clone());
-    create_or_update_user(user3.clone());
-    
-    // Create reports
-    let timestamp_now = ic_cdk::api::time();
-    let day_in_ns = 86400_000_000_000;
-
-    // Report 1
-    let report1 = Report {
-        id: 0,
-        title: "Environmental Dumping Near River".to_string(),
-        description: "Multiple industrial containers being dumped in the river near manufacturing zone. Activity observed between 2-4 AM with trucks bearing no license plates.".to_string(),
-        category: "environmental".to_string(),
-        date_submitted: timestamp_now - day_in_ns * 5,
-        incident_date: Some("2025-04-21".to_string()),
-        location: Some(Location {
-            address: Some("Near Industrial Zone, South River Bank".to_string()),
-            latitude: 20.5937,
-            longitude: 78.9629,
-        }),
-        submitter_id: user1.id,
-        evidence_count: 3,
-        evidence_files: Vec::new(),
-        stake_amount: 15,
-        reward_amount: 0,
-        status: ReportStatus::Pending,
-        reviewer: None,
-        review_date: None,
-        review_notes: None,
-    };
-
-    // Report 2
-    let report2 = Report {
-        id: 0,
-        title: "Suspicious Financial Activity".to_string(),
-        description: "Unusual pattern of transactions from multiple accounts feeding into offshore accounts. Potential money laundering scheme involving local businesses.".to_string(),
-        category: "fraud".to_string(),
-        date_submitted: timestamp_now - day_in_ns * 4,
-        incident_date: Some("2025-04-22".to_string()),
-        location: Some(Location {
-            address: Some("Financial District, Downtown".to_string()),
-            latitude: 19.0760,
-            longitude: 72.8777,
-        }),
-        submitter_id: user2.id,
-        evidence_count: 1,
-        evidence_files: Vec::new(),
-        stake_amount: 20,
-        reward_amount: 0,
-        status: ReportStatus::Pending,
-        reviewer: None,
-        review_date: None,
-        review_notes: None,
-    };
-
-    // Report 3
-    let report3 = Report {
-        id: 0,
-        title: "Cyber Attack Attempt".to_string(),
-        description: "Multiple unauthorized access attempts to government database detected. IP addresses traced to foreign servers. Advanced techniques used to bypass security.".to_string(),
-        category: "cybercrime".to_string(),
-        date_submitted: timestamp_now - day_in_ns * 3,
-        incident_date: Some("2025-04-23".to_string()),
-        location: Some(Location {
-            address: Some("Online - Multiple IP addresses".to_string()),
-            latitude: 28.6139,
-            longitude: 77.2090,
-        }),
-        submitter_id: user3.id,
-        evidence_count: 5,
-        evidence_files: Vec::new(),
-        stake_amount: 10,
-        reward_amount: 0,
-        status: ReportStatus::Pending,
-        reviewer: None,
-        review_date: None,
-        review_notes: None,
-    };
-
-    // Report 4
-    let report4 = Report {
-        id: 0,
-        title: "Counterfeit Products Distribution".to_string(),
-        description: "Large scale counterfeit luxury goods being sold in local markets. Products have fake authentication certificates and packaging.".to_string(),
-        category: "fraud".to_string(),
-        date_submitted: timestamp_now - day_in_ns * 30,
-        incident_date: Some("2025-03-24".to_string()),
-        location: Some(Location {
-            address: Some("Main Market Area, City Center".to_string()),
-            latitude: 13.0827,
-            longitude: 80.2707,
-        }),
-        submitter_id: user1.id,
-        evidence_count: 2,
-        evidence_files: Vec::new(),
-        stake_amount: 5,
-        reward_amount: 0,
-        status: ReportStatus::Pending,
-        reviewer: None,
-        review_date: None,
-        review_notes: None,
-    };
-
-    // Report 5
-    let report5 = Report {
-        id: 0,
-        title: "Illegal Waste Disposal".to_string(),
-        description: "Company disposing hazardous waste in protected area during night hours. Chemical waste being buried in plastic containers.".to_string(),
-        category: "environmental".to_string(),
-        date_submitted: timestamp_now - day_in_ns * 34,
-        incident_date: Some("2025-03-23".to_string()),
-        location: Some(Location {
-            address: Some("Protected Forest Area, Northern Region".to_string()),
-            latitude: 34.0837,
-            longitude: 74.7973,
-        }),
-        submitter_id: user3.id,
-        evidence_count: 4,
-        evidence_files: Vec::new(),
-        stake_amount: 25,
-        reward_amount: 0,
-        status: ReportStatus::Pending,
-        reviewer: None,
-        review_date: None,
-        review_notes: None,
-    };
-    
-    // Save reports
-    let report1_id = create_report(&report1);
-    let report2_id = create_report(&report2);
-    let report3_id = create_report(&report3);
-    let report4_id = create_report(&report4);
-    let report5_id = create_report(&report5);
-    
-    // Update users with their report IDs
-    let mut user1 = get_user(user1.id).unwrap();
-    let mut user2 = get_user(user2.id).unwrap();
-    let mut user3 = get_user(user3.id).unwrap();
-    
-    user1.reports_submitted.push(report1_id);
-    user1.reports_submitted.push(report4_id);
-    user1.stakes_active += 20; // 15 + 5
-    
-    user2.reports_submitted.push(report2_id);
-    user2.stakes_active += 20;
-    
-    user3.reports_submitted.push(report3_id);
-    user3.reports_submitted.push(report5_id);
-    user3.stakes_active += 35; // 10 + 25
-    
-    create_or_update_user(user1);
-    create_or_update_user(user2);
-    create_or_update_user(user3);
-    
-    // Create some messages for reports
-    let message1 = Message {
-        id: 0,
-        report_id: report1_id,
-        sender: MessageSender::Reporter(Principal::from_text("2vxsx-fae").unwrap_or_else(|_| Principal::anonymous())),
-        content: "I have submitted additional evidence via email.".to_string(),
-        timestamp: timestamp_now - day_in_ns * 1,
-        attachment: None,
-    };
-    
-    let message2 = Message {
-        id: 0,
-        report_id: report1_id,
-        sender: MessageSender::Authority(Principal::from_text("d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe").unwrap_or_else(|_| Principal::anonymous())),
-        content: "Thank you for your report. We will investigate this matter.".to_string(),
-        timestamp: timestamp_now - day_in_ns / 2,
-        attachment: None,
-    };
-    
-    let message3 = Message {
-        id: 0,
-        report_id: report3_id,
-        sender: MessageSender::Reporter(Principal::from_text("2ibo7-dia").unwrap_or_else(|_| Principal::anonymous())),
-        content: "I have the server logs available if needed.".to_string(),
-        timestamp: timestamp_now - day_in_ns * 2,
-        attachment: None,
-    };
-    
-    create_message(&message1);
-    create_message(&message2);
-    create_message(&message3);
-    
-    // Update stats
-    AUTHORITY_STATS.with(|stats| {
-        let mut stats = stats.borrow_mut();
-        stats.reports_pending = 5;
-        stats.reports_verified = 156; // Mock historical data
-        stats.reports_rejected = 42; // Mock historical data
-        stats.total_rewards_distributed = 4350; // Mock historical data
-    });
+    // Mock data has been removed
+    // Only real user-submitted reports will appear in the system
+    // This function is kept as a stub for potential future use
 }

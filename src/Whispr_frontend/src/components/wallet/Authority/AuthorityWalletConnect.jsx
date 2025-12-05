@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { registerAsAuthority, reinitializeWithIdentity, getCurrentPrincipal, isAuthority as checkIsAuthorityApi } from '../../../api/whisprBackend';
 
 // Authorized principal ID that's allowed to access authority features
 const AUTHORIZED_PRINCIPAL = "d27x5-vpdgv-xg4ve-woszp-ulej4-4hlq4-xrlwz-nyedm-rtjsa-a2d2z-oqe";
@@ -40,6 +41,15 @@ const useAuthorityWalletConnect = () => {
           
           if (!authorized) {
             setError("This wallet is not authorized for authority access");
+          } else {
+            // Register as authority in the backend if authorized
+            try {
+              await reinitializeWithIdentity(null); // Reinitialize with Plug wallet
+              await registerAsAuthority();
+              console.log("Registered as authority in backend on reconnect");
+            } catch (regError) {
+              console.warn("Backend authority registration on reconnect:", regError.message);
+            }
           }
           
           setWalletInfo({
@@ -77,9 +87,9 @@ const useAuthorityWalletConnect = () => {
     }
 
     try {
-      // Whitelist of canisters to connect with
-      const whitelist = [];
-      const host = "https://mainnet.dfinity.network";
+      // Whitelist of canisters to connect with - include the backend canister
+      const whitelist = ["bdggw-2qaaa-aaaag-aua3q-cai"];
+      const host = "https://icp-api.io";
 
       // Request connection
       const result = await window.ic.plug.requestConnect({
@@ -107,6 +117,16 @@ const useAuthorityWalletConnect = () => {
         
         if (authorized) {
           setSuccessMessage("Authority wallet connected successfully!");
+          
+          // Register as authority in the backend
+          try {
+            await reinitializeWithIdentity(null); // Reinitialize with Plug wallet
+            await registerAsAuthority();
+            console.log("Registered as authority in backend");
+          } catch (regError) {
+            console.warn("Backend authority registration:", regError.message);
+            // Continue anyway - might already be registered
+          }
           
           // Handle redirect if there was a saved path
           const redirectPath = sessionStorage.getItem('authorityRedirectAfterConnect');

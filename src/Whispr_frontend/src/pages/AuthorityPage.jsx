@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { XCircle, CheckCircle, Plus, Minus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { XCircle, CheckCircle, Plus, Minus, Brain } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
@@ -7,13 +7,15 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { FormField, TextArea, Input } from '../components/forms/FormComponents';
 import ReportTable from '../features/reports/ReportTable';
 import AuthorityStats from '../features/authority/AuthorityStats';
-import { useReports } from '../hooks/useReports';
-import { useAuthorityStats } from '../hooks/useAuthorityStats';
+import AIReportAnalysis from '../features/authority/AIReportAnalysis';
+import AIPrioritizationPanel from '../features/authority/AIPrioritizationPanel';
+import { useAuthorityDashboard } from '../hooks/useAuthorityDashboard';
 import { useFilters } from '../hooks/useFilters';
 import { authorityService } from '../services/authorityService';
 import { formatDate, truncateText } from '../utils/helpers';
 import { DEFAULT_REWARD_MULTIPLIER } from '../constants';
 import Badge from '../components/ui/Badge';
+import { getReportEvidence } from '../api/whisprBackend';
 
 const AuthorityPage = () => {
   const [selectedReport, setSelectedReport] = useState(null);
@@ -21,16 +23,46 @@ const AuthorityPage = () => {
   const [rewardMultiplier, setRewardMultiplier] = useState(DEFAULT_REWARD_MULTIPLIER);
   const [isProcessing, setIsProcessing] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
+  const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [aiPrioritizedReports, setAiPrioritizedReports] = useState(null);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
   
   const listContainerRef = useRef(null);
   const [scrollPosition, setScrollPosition] = useState(0);
 
-  const { reports, loading: reportsLoading, refreshReports } = useReports();
-  const { stats, loading: statsLoading, refreshStats } = useAuthorityStats();
+  // Use combined hook for parallel data fetching
+  const { reports, stats, loading, refresh, isAuthority } = useAuthorityDashboard();
   
-  const { filters, filteredData, updateFilter } = useFilters(reports, {
+  // Use AI prioritized reports if available, otherwise use original
+  const reportsToFilter = aiPrioritizedReports || reports;
+  
+  const { filters, filteredData, updateFilter } = useFilters(reportsToFilter, {
     status: 'pending'
   });
+
+  // Handle AI prioritization results
+  const handleAIPrioritize = (prioritizedReports, analysisResult) => {
+    setAiPrioritizedReports(prioritizedReports);
+    setAiAnalysisResult(analysisResult);
+  };
+
+  // Fetch evidence when a report is selected
+  useEffect(() => {
+    if (selectedReport) {
+      setLoadingEvidence(true);
+      getReportEvidence(selectedReport)
+        .then(files => {
+          console.log("Loaded evidence files:", files);
+          setEvidenceFiles(files);
+        })
+        .catch(err => console.error("Error loading evidence:", err))
+        .finally(() => setLoadingEvidence(false));
+    } else {
+      setEvidenceFiles([]);
+    }
+  }, [selectedReport]);
 
   const handleSelectReport = (id) => {
     setScrollPosition(window.scrollY);
@@ -43,6 +75,7 @@ const AuthorityPage = () => {
     setSelectedReport(null);
     setReviewNotes('');
     setAlert(null);
+    setEvidenceFiles([]);
     setTimeout(() => {
       window.scrollTo({ top: scrollPosition, behavior: 'auto' });
     }, 100);
@@ -98,8 +131,7 @@ const AuthorityPage = () => {
       } else {
         setSelectedReport(null);
         setReviewNotes('');
-        refreshReports();
-        refreshStats();
+        refresh();
         
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -122,7 +154,7 @@ const AuthorityPage = () => {
     
     const stakeAmount = selectedReportData.stakeAmount || 0;
     const potentialReward = stakeAmount * rewardMultiplier;
-    const evidenceFiles = selectedReportData.evidenceFiles || [];
+    // Use fetched evidence files, or fall back to report's evidence
     
     return (
       <Card>
@@ -168,6 +200,9 @@ const AuthorityPage = () => {
               </Badge>
             </div>
             
+            {/* AI Analysis Section */}
+            <AIReportAnalysis report={selectedReportData} />
+            
             <div>
               <h3 className="text-sm font-medium text-gray-400 mb-2">Report Description</h3>
               <div className="bg-slate-800 p-4 rounded-lg whitespace-pre-line">
@@ -193,6 +228,7 @@ const AuthorityPage = () => {
             <div>
               <h3 className="text-sm font-medium text-gray-400 mb-2">
                 Evidence Files ({selectedReportData.evidenceCount || 0})
+                {loadingEvidence && <span className="ml-2 text-xs">(Loading...)</span>}
               </h3>
               
               {selectedReportData.evidenceCount > 0 ? (
@@ -216,6 +252,10 @@ const AuthorityPage = () => {
                         </div>
                       </div>
                     ))
+                  ) : loadingEvidence ? (
+                    <div className="col-span-full flex justify-center py-4">
+                      <LoadingSpinner size="sm" />
+                    </div>
                   ) : (
                     [...Array(selectedReportData.evidenceCount)].map((_, i) => (
                       <div key={i} className="relative bg-slate-800 rounded-lg overflow-hidden aspect-video">
@@ -336,6 +376,32 @@ const AuthorityPage = () => {
     );
   }
 
+  // Show access denied message if not an authority
+  if (!loading && !isAuthority) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Authority Dashboard</h1>
+          <p className="text-gray-400">Review and verify anonymous reports from informers</p>
+        </div>
+        <Card className="bg-gradient-to-br from-red-900/30 to-orange-900/30">
+          <Card.Content>
+            <div className="text-center py-8">
+              <h2 className="text-xl font-bold mb-2 text-red-400">Access Denied</h2>
+              <p className="text-gray-400 mb-4">
+                You are not authorized to access the Authority Dashboard.
+              </p>
+              <p className="text-gray-500 text-sm">
+                To access this page, you must connect with an authorized wallet.
+                Please connect using Plug wallet with the authorized principal ID.
+              </p>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -344,7 +410,7 @@ const AuthorityPage = () => {
       </div>
 
       <div className="mb-8">
-        {statsLoading ? (
+        {loading ? (
           <div className="flex justify-center">
             <LoadingSpinner />
           </div>
@@ -352,6 +418,17 @@ const AuthorityPage = () => {
           <AuthorityStats stats={stats} />
         )}
       </div>
+
+      {/* AI Prioritization Panel */}
+      {showAIPanel && (
+        <div className="mb-6">
+          <AIPrioritizationPanel 
+            reports={reports}
+            onPrioritize={handleAIPrioritize}
+            onClose={() => setShowAIPanel(false)}
+          />
+        </div>
+      )}
 
       <div className="space-y-6" ref={listContainerRef}>
         {alert && (
@@ -361,14 +438,29 @@ const AuthorityPage = () => {
         )}
         
         <Card>
-          <Card.Header>
-            <Card.Title>Reports for Review</Card.Title>
-            <Card.Description>Review and verify anonymous reports</Card.Description>
+          <Card.Header className="flex justify-between items-center">
+            <div>
+              <Card.Title>Reports for Review</Card.Title>
+              <Card.Description>
+                Review and verify anonymous reports
+                {aiPrioritizedReports && (
+                  <span className="ml-2 text-purple-400">(AI Prioritized)</span>
+                )}
+              </Card.Description>
+            </div>
+            <Button
+              onClick={() => setShowAIPanel(!showAIPanel)}
+              variant={showAIPanel ? "primary" : "ghost"}
+              className={showAIPanel ? "bg-purple-600" : "bg-purple-900/30 hover:bg-purple-800/50 text-purple-300"}
+              leftIcon={<Brain className="h-4 w-4" />}
+            >
+              AI Prioritize
+            </Button>
           </Card.Header>
           <Card.Content>
             <ReportTable
               reports={filteredData}
-              loading={reportsLoading}
+              loading={loading}
               filters={filters}
               onFilterChange={updateFilter}
               onSort={handleSort}
